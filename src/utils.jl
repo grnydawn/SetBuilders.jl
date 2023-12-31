@@ -1,4 +1,4 @@
-using InteractiveUtils: subtypes, supertypes
+using InteractiveUtils: subtypes
 
 @enum LoggingSeverity begin
     SB_LOG_CRITICAL = 5
