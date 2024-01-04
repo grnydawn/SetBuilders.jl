@@ -2,213 +2,241 @@
 
 Julia Predicate and Enumerated Set Package
 
-## Set Creations
 
+## Introduction
+
+Most of programming languages including Julia support a certain type of
+enumerated sets, but not the type of predicate sets in mathematical sense.
+For example, in Julia, we can create a set having integer values like
+
+```julia
+A = Set([1,2,3])
 ```
+However, we cannot create something like this:
+
+```julia
+A = Set(x ∈ Integer | 0 < x < 4)
+```
+
+With the SetBuilders package, Julia users can create predicate sets, compose
+them using set operations such as unions and intersections, and check if an
+object is a member of the set.
+
+```julia
+I = @setbuild(Integer)          # creates a set from Julia Integer type
+A = @setbuild(x ∈ I, 0 < x < 4) # creates a set with the predicate of "0 < x < 4"
+B = @setbuild(x ∈ I, 2 < x < 6) # creates a set with the predicate of "2 < x < 6"
+C = A ∩ B                       # creates an intersection with the two sets
+@assert 3 ∈ C                   # => true, 3 is a member of the set C
+@assert !(4 ∈ C)                # => true, 4 is not a member of the set C
+```
+
+## Installation
+
+The package can be installed using the Julia package manager. From the Julia
+REPL, type ] to enter the Pkg REPL mode and run:
+
+```julia
+pkg> add SetBuilders
+```
+Alternatively, it can be installed via the Pkg API:
+
+```julia
+julia> import Pkg; Pkg.add("SetBuilders")
+```
+
+## Usage
+
+Once installed, the `SetBuilders` package can be loaded with `using SetBuilders`.
+
+```julia
 using SetBuilders
+```
 
-I = SB_SET_INT
+### Set Creations
 
-x = 1
+SetBuilders provides one macro, `@setbuild`, for creating various types of
+sets, including sets from Julia data types, predicate sets, enumerated sets,
+and mapped sets.
 
-# helper struct for testing
+Here are examples of set creations:
+```
+# Test fixtures
+value = 10
+
 struct MyStruct
     a
     b
 end
 
-# helper functions for testing
 function myfunc(x)
     x - 5
 end
 
-A = @setfilter(x in I, 0 <= x < 10)
+# Empty set
+E = @setbuild()
 
-B = @setfilter(x in I, 5 <= x < 15)
+# Universal set
+U = @setbuild(Any)
 
-C = setfromtype(Complex)
+# sets from Julia types
+I = @setbuild(Integer)
+R = @setbuild(Real)
+S = @setbuild(MyStruct)
 
-D = @setfilter((x in A, y in B), x < 5 && y > 10)
+# Enumerated sets
+A = @setbuild([1, 2, 3])
+B = @setbuild(Int64[value, 2])
+C = @setbuild(Dict{String, String}[])
 
-E = @setfilter((x in A, y in B), c1*x + c2*y > 0, c1=-1, c2=1)
+# Cartesian sets
+D = @setbuild((I, I))
+F = @setbuild((x, y) in I)
+G = @setbuild((I^3, z in I))
 
-F = @setconvert(z in I, x -> x + 5, z -> z - 5, x in A)
+# Predicate sets
+H = @setbuild(x in I, 0 <= x < 10)
+J = @setbuild(x in I, 5 <= x < 15)
+K = @setbuild((x in H, y in J), x < 5 && y > 10)
+L = @setbuild((x in H, y in J), c1*x + c2*y > 0, c1=-1, c2=1)
+M = @setbuild(x in I, x + y > 0, y=value)
+N = @setbuild(x in @setbuild(Real), x > 0)
 
-G = @setconvert(z in I, x -> x + 5, z -> func(z), x in A, func=myfunc)
-
-H = setfromtype(MyStruct)
-
-J = @setconvert(z in H, (x, y) -> MyStruct(x, y), z -> (z.a, z.b),
-                x in A, y in B, MyStruct=MyStruct)
-
-K = @setconvert(z in H, (x, y) -> mystruct(x, y), z -> (z.a, z.b),
-                x in A, y in B, mystruct=MyStruct)
-
-L = @setconvert(z in H, (x, y) -> mystruct(x[1], y[2]), z -> ((z.a, z.b), (z.a, z.b)),
-                x in D, y in D, mystruct=MyStruct)
-
-M = @setconvert(z in H, (x, y) -> mystruct(x, y), z -> [(z.a, z.b), (z.b, z.a)],
-                (x, y) in A, mystruct=MyStruct)
-
-N = @setconvert(z in H, (x, y) -> mystruct(x, y), z -> (z.a, z.b),
-                (x, y) in A, mystruct=MyStruct)
-
-O = @setfilter(x in A, true)
-
-P = @setfilter(x in A, false)
-
-Q = setfromtype(Rational)
-
-R = setfromtype(Real)
-
-S = setfromtype(Dict{String, Number})
-
-T = setfromtype(Vector{Int64})
-
-U = setfromtype(Array{Float64, 2})
-
-V = @setenum(1)
-
-W = @setenum([x,2], type=Int64)
-
-X = @setenum([Int32(-1), Int32(1),2], type=(Int64, Int32))
-
-Y = @setenum(type=Union{Int64, Int32})
-
-Z = I
+# Mapped sets
+O = @setbuild(z in I, (x in H) -> x + 5, z -> z - 5)
+P = @setbuild(z in I, (x in J) -> x + 5, z -> func(z), func=myfunc)
+Q = @setbuild(z in S, (x in H, y in J) -> mystruct(x, y),
+                z -> (z.a, z.b), mystruct=MyStruct)
 ```
 
-## Set Membership Tests
+### Set Membership Tests
 
+Once a set is created, checking if an object is a member of the set is
+straightforward using the `in` or `∈` operators.
+
+All of the following `@assert` checks should pass.
 ```
-#A = @setfilter(x in I, 0 <= x < 10)
-@assert 0 in A
-@assert 5 in A
-@assert !(10 in A)
-@assert !(-1 in A)
+# Empty set
+E = @setbuild()
+@assert !(1 in E)
 
-#B = @setfilter(x in I, 5 <= x < 15)
-@assert 5 in B
-@assert 10 in B
-@assert !(15 in B)
-@assert !(4 in B)
+# Universal set
+U = @setbuild(Any)
+@assert 1 in U
 
-#C = setfromtype(Complex)
-@assert 1 + 2im in C
-@assert !(1 in C)
+# sets from Julia types
+I = @setbuild(Integer)
+@assert 1 in I
+@assert !(1.0 in I)
 
-#D = @setfilter((x in A, y in B), x < 5 && y > 10)
-@assert (0, 11) in D
-@assert !((5, 10) in D)
+R = @setbuild(Real)
+@assert 1.0 in R
+@assert !(1.0im in R)
 
-#E = @setfilter((x in A, y in B), c1*x + c2*y > 0, c1=-1, c2=1)
-@assert (0, 5) in E
-@assert !((5, 5) in E)
+S = @setbuild(MyStruct)
+@assert MyStruct(1,2) in S
+@assert !(1 in S)
 
-#F = @setconvert(z in I, x -> x + 5, z -> z - 5, x in A)
-@assert 5 in F
-@assert 10 in F
-@assert !(15 in F)
+# Enumerated sets
+A = @setbuild([1, 2, 3])
+@assert 1 in A
+@assert !(4 in A)
 
-#G = @setconvert(z in I, x -> x + 5, z -> func(z), x in A, func=myfunc1)
-@assert 5 in G
-@assert 10 in G
-@assert !(15 in G)
+B = @setbuild(Int64[value, 2])
+@assert value in B
+@assert !(Int32(value) in B)
+@assert !(3 in B)
+push!(B, 3)
+@assert 3 in B
+pop!(B, 3)
+@assert !(3 in B)
 
-#H = setfromtype(MyStruct)
-@assert MyStruct(1, 2) in H
+C = @setbuild(Dict{String, String}[])
+d1 = Dict{String, String}("a" => "x")
+d2 = Dict{String, Integer}("a" => 1)
+@assert !(d1 in C)
+push!(C, d1)
+@assert d1 in C
+@assert !(d2 in C)
 
-#J = @setconvert(z in H, (x, y) -> MyStruct(x, y), z -> (z.a, z.b),
-#                x in A, y in B, MyStruct=MyStruct)
-@assert MyStruct(1, 5) in J
-@assert !(MyStruct(10, 5) in J)
+# Cartesian sets
+D = @setbuild((I, I))
+@assert (1, 1) in D
+@assert !(1 in D)
+@assert !((1.0, 1.0) in D)
 
-#K = @setconvert(z in H, (x, y) -> mystruct(x, y), z -> (z.a, z.b),
-#                x in A, y in B, mystruct=MyStruct)
-@assert MyStruct(1, 5) in K
-@assert !(MyStruct(10, 5) in K)
+F = @setbuild((x, y) in I)
+@assert (1, 1) in F
+@assert !(1 in F)
+@assert !((1.0, 1.0) in F)
 
+G = @setbuild((I^3, z in I))
+@assert (1, 1, 1, 1) in G
+@assert !(1 in G)
+@assert !((1.0, 1.0, 1.0, 1.0) in G)
 
-#L = @setconvert(z in H, (x, y) -> mystruct(x[1], y[2]), z -> ((z.a, z.b), (z.a, z.b)),
-#                x in D, y in D, mystruct=MyStruct)
-@assert MyStruct(1, 11) in L
-@assert !(MyStruct(1, 5) in L)
+# Predicate sets
+H = @setbuild(x in I, 0 <= x < 10)
+@assert 0 in H
+@assert !(10 in H)
 
-#M = @setconvert(z in H, (x, y) -> mystruct(x, y), z -> [(z.a, z.b), (z.b, z.a)],
-#                (x, y) in A, mystruct=MyStruct)
-@assert MyStruct(1, 5) in M
-@assert !(MyStruct(10, 5) in M)
+J = @setbuild(x in I, 5 <= x < 15)
+@assert 5 in J
+@assert !(15 in J)
 
-#N = @setconvert(z in H, (x, y) -> mystruct(x, y), z -> (z.a, z.b),
-#N = @setconvert(z in H, (x, y) -> mystruct(x, y), z -> (z.a, z.b),
-#                (x, y) in A, mystruct=MyStruct)
-@assert MyStruct(1, 5) in N
-@assert !(MyStruct(10, 5) in N)
+K = @setbuild((x in H, y in J), x < 5 && y > 10)
+@assert (4, 11) in K
+@assert !((9, 10) in K)
 
-#O = @setfilter(x in A, true)
-@assert 0 in O
-@assert !(10 in O)
+L = @setbuild((x in H, y in J), c1*x + c2*y > 0, c1=-1, c2=1)
+@assert (5, 10) in L
+@assert !((9, 5) in L)
 
-#P = @setfilter(x in A, false)
+M = @setbuild(x in I, x + y > 0, y=value)
+@assert -9 in M
+@assert !(-10 in M)
+
+N = @setbuild(x in @setbuild(Real), x > 0)
+@assert 1 in N
+@assert 1.0 in N
+@assert !(1im in N)
+
+# Mapped sets
+O = @setbuild(z in I, (x in H) -> x + 5, z -> z - 5)
+@assert 5 in O
+@assert !(0 in O)
+
+P = @setbuild(z in I, (x in J) -> x + 5, z -> func(z), func=myfunc)
+@assert 10 in P
 @assert !(5 in P)
-@assert !(10 in P)
 
-#Q = setfromtype(Rational)
-@assert 1//2 in Q
-@assert !(0.5 in Q)
-
-#R = setfromtype(Real)
-@assert 0.5 in R
-@assert !(0.5im in R)
-
-#S = setfromtype(Dict{String, Number})
-@assert Dict{String, Number}("1" => 1) in S
-@assert !(Dict{String, String}("1" => "1") in S)
-
-#T = setfromtype(Vector{Int64})
-@assert Vector{Int64}([1,1]) in T
-@assert !(Vector{Int32}([1,1]) in T)
-
-#U = setfromtype(Array{Float64, 2})
-@assert Array{Float64, 2}([1 1; 2 2]) in U
-@assert !(Array{Float32, 2}([1 1; 2 2]) in U)
-
-#V = @setenum(1)
-@assert 1 in V
-@assert !(2 in V)
-
-# x = 1
-#W = @setenum([x,2], type=Int64)
-@assert 1 in W
-@assert !(3 in W)
-@assert !(Int32(1) in W)
-
-#X = @setenum([Int32(1),2], type=(Int64, Int32))
-@assert Int64(2) in X
-@assert !(Int64(1) in X)
-
-#Y = @setenum(type=Union{Int64, Int32})
-@assert !(1 in Y)
-push!(Y, 1)
-@assert 1 in Y
-
-#Z = I
-```
-
-## Set Operation Tests
+Q = @setbuild(z in S, (x in H, y in J) -> mystruct(x, y),
+                z -> (z.a, z.b), mystruct=MyStruct)
+@assert MyStruct(5, 5) in Q
+@assert !(MyStruct(10, 10) in Q)
 
 ```
-@assert all(x -> !(x in SB_SET_EMPTY), (0, 1))
-@assert all(x -> x in SB_SET_UNIVERSAL, (0, 1))
 
-@assert complement(SB_SET_EMPTY) == SB_SET_UNIVERSAL
-@assert complement(SB_SET_UNIVERSAL) == SB_SET_EMPTY
-@assert ~SB_SET_UNIVERSAL == SB_SET_EMPTY
-@assert ~SB_SET_EMPTY == SB_SET_UNIVERSAL
+### Set Operation Tests
 
-#A = @setfilter(x in I, 0 <= x < 10)
-#B = @setfilter(x in I, 5 <= x < 15)
-#X = @setenum([Int32(-1), Int32(1),2], type=(Int64, Int32))
+SetBuilders also offers standard set operations such as union and intersection.
+
+```
+E = @setbuild()
+U = @setbuild(Any)
+
+@assert all(x -> !(x in E), (0, 1))
+@assert all(x -> x in U, (0, 1))
+
+@assert complement(E) == U
+@assert complement(U) == E
+@assert ~U == E
+@assert ~E == U
+
+I = @setbuild(Integer)
+A = @setbuild(x in I, 0 <= x < 10)
+B = @setbuild(x in I, 5 <= x < 15)
+X = @setbuild(Union{Int64, Int32}[Int32(-1), Int32(1), 2])
 
 @assert all(x -> x in A, 0:9)
 @assert all(x -> x ∈ A, 0:9)
@@ -217,29 +245,29 @@ push!(Y, 1)
 @assert all(x -> x in union(A, B), 0:14)
 @assert all(x -> x in A ∪ B, 0:14)
 @assert all(x -> !(x in union(A, B)), (-1, 15))
-@assert all(x -> x in union(A, SB_SET_UNIVERSAL), -1:15)
-@assert all(x -> x in A ∪ ~SB_SET_EMPTY, -1:15)
-@assert all(x -> x in union(A, SB_SET_EMPTY), 0:9)
+@assert all(x -> x in union(A, U), -1:15)
+@assert all(x -> x in A ∪ ~E, -1:15)
+@assert all(x -> x in union(A, E), 0:9)
 
 @assert all(x -> x in intersect(A, B), 5:9)
 @assert all(x -> x ∈ A ∩ B, 5:9)
 @assert all(x -> !(x in intersect(A, B)), 0:4)
-@assert all(x -> x in intersect(A, SB_SET_UNIVERSAL), 0:9)
-@assert all(x -> !(x in intersect(A, SB_SET_EMPTY)), -1:15)
+@assert all(x -> x in intersect(A, U), 0:9)
+@assert all(x -> !(x in intersect(A, E)), -1:15)
 
 @assert all(x -> x in setdiff(A, B), 0:4)
 @assert all(x -> x in A - B, 0:4)
 @assert all(x -> !(x in setdiff(A, B)), 5:9)
-@assert all(x -> !(x in setdiff(A, SB_SET_UNIVERSAL)), -1:15)
-@assert all(x -> x in setdiff(SB_SET_UNIVERSAL, A), 10:14)
-@assert all(x -> x in ~SB_SET_EMPTY - A, 10:14)
-@assert all(x -> x in setdiff(A, SB_SET_EMPTY), 0:9)
-@assert all(x -> !(x in setdiff(SB_SET_EMPTY, A)), -1:15)
+@assert all(x -> !(x in setdiff(A, U)), -1:15)
+@assert all(x -> x in setdiff(U, A), 10:14)
+@assert all(x -> x in ~E - A, 10:14)
+@assert all(x -> x in setdiff(A, E), 0:9)
+@assert all(x -> !(x in setdiff(E, A)), -1:15)
 
 @assert all(x -> x in symdiff(A, B), [0:4; 10:14])
 @assert all(x -> !(x in symdiff(A, B)), 5:9)
-@assert all(x -> !(x in symdiff(A, SB_SET_UNIVERSAL)), 0:9)
-@assert all(x -> x in symdiff(A, SB_SET_EMPTY), 0:9)
+@assert all(x -> !(x in symdiff(A, U)), 0:9)
+@assert all(x -> x in symdiff(A, E), 0:9)
 
 @assert all(x -> x in A ∪ X, [Int32(i) for i in -1:9])
 @assert all(x -> !(x in A ∩ X), [0, 1])

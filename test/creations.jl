@@ -1,77 +1,101 @@
-# Tests for set creation syntax
-# prepare an integer set for testing
+# Set creation tests
 
-I = SB_SET_INT
+# Test fixtures
 
-x = 1
-#mytest()
+value = 10
 
-# helper struct for testing
 struct MyStruct
     a
     b
 end
 
-# helper functions for testing
 function myfunc(x)
     x - 5
 end
 
-A = @setfilter(x in I, 0 <= x < 10)
+# Empty set
+E = @setbuild()
 
-B = @setfilter(x in I, 5 <= x < 15)
+# Universal set
+U = @setbuild(Any)
 
-C = setfromtype(Complex)
+# sets from Julia types
+I = @setbuild(Integer)
 
-D = @setfilter((x in A, y in B), x < 5 && y > 10)
+Q = @setbuild(Rational)
 
-E = @setfilter((x in A, y in B), c1*x + c2*y > 0, c1=-1, c2=1)
+R = @setbuild(Real)
 
-F = @setconvert(z in I, x -> x + 5, z -> z - 5, x in A)
+C = @setbuild(Complex)
 
-G = @setconvert(z in I, x -> x + 5, z -> func(z), x in A, func=myfunc)
+D = @setbuild(Dict{String, Number})
 
-H = setfromtype(MyStruct)
+V = @setbuild(Vector{Int64})
 
-J = @setconvert(z in H, (x, y) -> MyStruct(x, y), z -> (z.a, z.b),
-                x in A, y in B, MyStruct=MyStruct)
+A = @setbuild(Array{Float64, 2})
 
-K = @setconvert(z in H, (x, y) -> mystruct(x, y), z -> (z.a, z.b),
-                x in A, y in B, mystruct=MyStruct)
+S = @setbuild(MyStruct)
 
-L = @setconvert(z in H, (x, y) -> mystruct(x[1], y[2]), z -> ((z.a, z.b), (z.a, z.b)),
-                x in D, y in D, mystruct=MyStruct)
+G = @setbuild(Union{Integer, Float64})
 
-M = @setconvert(z in H, (x, y) -> mystruct(x, y), z -> [(z.a, z.b), (z.b, z.a)],
-                (x, y) in A, mystruct=MyStruct)
+# Enumerated sets
+ENUM1 = @setbuild([1, 2, 3])
 
-N = @setconvert(z in H, (x, y) -> mystruct(x, y), z -> (z.a, z.b),
-                (x, y) in A, mystruct=MyStruct)
+ENUM2 = @setbuild(Int64[value, 2])
 
-O = @setfilter(x in A, true)
+ENUM3 = @setbuild(Union{Int64, Float64}[1, 2, 3.0])
 
-P = @setfilter(x in A, false)
+ENUM4 = @setbuild(Dict{String, String}[])
 
-Q = setfromtype(Rational)
+# Cartesian sets
+CART1 = @setbuild((I, I))
 
-R = setfromtype(Real)
+CART2 = @setbuild((x in I, I))
 
-S = setfromtype(Dict{String, Number})
+CART3 = @setbuild((x, y) in I)
 
-T = setfromtype(Vector{Int64})
+CART4 = @setbuild(((x, y) in I, z in I))
 
-U = setfromtype(Array{Float64, 2})
+CART5 = @setbuild((I^3, z in I))
 
-V = @setenum(1)
+# Predicate sets
+PRED1 = @setbuild(x in I, true)
 
-W = @setenum([x,2], type=Int64)
+PRED2 = @setbuild(x in I, false)
 
-X = @setenum([Int32(-1), Int32(1),2], type=(Int64, Int32))
+PRED3 = @setbuild(x in I, 0 <= x < 10)
 
-Y = @setenum(type=Union{Int64, Int32})
+PRED4 = @setbuild(x in I, 5 <= x < 15)
 
-Z = I
+PRED5 = @setbuild((x in PRED3, y in PRED4), x < 5 && y > 10)
 
+PRED6 = @setbuild((x in PRED3, y in PRED4), c1*x + c2*y > 0, c1=-1, c2=1)
+
+PRED7 = @setbuild(x in I, x + y > 0, y=value)
+
+PRED8 = @setbuild(x in @setbuild(Real), x > 0)
+
+# Mapped sets
+MAPD1 = @setbuild(z in I, (x in PRED3) -> x + 5, z -> z - 5)
+
+MAPD2 = @setbuild(z in I, (x in PRED4) -> x + 5, z -> func(z), func=myfunc)
+
+MAPD3 = @setbuild(z in S, (x in PRED3, y in PRED4) -> mystruct(x, y),
+                z -> (z.a, z.b), mystruct=MyStruct)
+
+MAPD4 = @setbuild(z in S, ((x, y) in PRED3) -> mystruct(x, y),
+                z -> (z.a, z.b), mystruct=MyStruct)
+
+MAPD5 = @setbuild(z in S, ((x, y) in PRED5) -> mystruct(x[1], y[2]),
+                z -> ((z.a, z.b), (z.a, z.b)), mystruct=MyStruct)
+
+MAPD6 = @setbuild(z in S, ((x, y) in PRED3) -> mystruct(x, y),
+                z -> [(z.a, z.b), (z.b, z.a)], mystruct=MyStruct)
+
+MAPD7 = @setbuild(x in I, (y in I) -> y + 1, x -> x - 1,
+                0 <= x < 10, 0 <= y < 10)
+
+# generating tests
 for name in names(Main)
     obj = getfield(Main, name)
 

@@ -1,117 +1,166 @@
-# Tests for set membership
-# Sets used in the tests are created in syntax.jl
+# Set membership tests
 
-#A = @setfilter(x in I, 0 <= x < 10)
-@test 0 in A
-@test 5 in A
-@test !(10 in A)
-@test !(-1 in A)
+## Empty set
+#E = @setbuild()
+@test !(1 in E)
 
-#B = @setfilter(x in I, 5 <= x < 15)
-@test 5 in B
-@test 10 in B
-@test !(15 in B)
-@test !(4 in B)
+## Universal set
+#U = @setbuild(Any)
+@test 1 in U
 
-#C = setfromtype(Complex)
-@test 1 + 2im in C
-@test !(1 in C)
+## sets from Julia types
+#I = @setbuild(Integer)
+@test 1 in I
+@test !(1.0 in I)
 
-#D = @setfilter((x in A, y in B), x < 5 && y > 10)
-@test (0, 11) in D
-@test !((5, 10) in D)
-
-#E = @setfilter((x in A, y in B), c1*x + c2*y > 0, c1=-1, c2=1)
-@test (0, 5) in E
-@test !((5, 5) in E)
-
-#F = @setconvert(z in I, x -> x + 5, z -> z - 5, x in A)
-@test 5 in F
-@test 10 in F
-@test !(15 in F)
-
-#G = @setconvert(z in I, x -> x + 5, z -> func(z), x in A, func=myfunc1)
-@test 5 in G
-@test 10 in G
-@test !(15 in G)
-
-#H = setfromtype(MyStruct)
-@test MyStruct(1, 2) in H
-
-#I = SB_SET_INT
-
-#J = @setconvert(z in H, (x, y) -> MyStruct(x, y), z -> (z.a, z.b),
-#                x in A, y in B, MyStruct=MyStruct)
-@test MyStruct(1, 5) in J
-@test !(MyStruct(10, 5) in J)
-
-#K = @setconvert(z in H, (x, y) -> mystruct(x, y), z -> (z.a, z.b),
-#                x in A, y in B, mystruct=MyStruct)
-@test MyStruct(1, 5) in K
-@test !(MyStruct(10, 5) in K)
-
-
-#L = @setconvert(z in H, (x, y) -> mystruct(x[1], y[2]), z -> ((z.a, z.b), (z.a, z.b)),
-#                x in D, y in D, mystruct=MyStruct)
-@test MyStruct(1, 11) in L
-@test !(MyStruct(1, 5) in L)
-
-#M = @setconvert(z in H, (x, y) -> mystruct(x, y), z -> [(z.a, z.b), (z.b, z.a)],
-#                (x, y) in A, mystruct=MyStruct)
-@test MyStruct(1, 5) in M
-@test !(MyStruct(10, 5) in M)
-
-#N = @setconvert(z in H, (x, y) -> mystruct(x, y), z -> (z.a, z.b),
-#N = @setconvert(z in H, (x, y) -> mystruct(x, y), z -> (z.a, z.b),
-#                (x, y) in A, mystruct=MyStruct)
-@test MyStruct(1, 5) in N
-@test !(MyStruct(10, 5) in N)
-
-#O = @setfilter(x in A, true)
-@test 0 in O
-@test !(10 in O)
-
-#P = @setfilter(x in A, false)
-@test !(5 in P)
-@test !(10 in P)
-
-#Q = setfromtype(Rational)
+#Q = @setbuild(Rational)
 @test 1//2 in Q
 @test !(0.5 in Q)
 
-#R = setfromtype(Real)
-@test 0.5 in R
-@test !(0.5im in R)
+#R = @setbuild(Real)
+@test 1.0 in R
+@test !(1.0im in R)
 
-#S = setfromtype(Dict{String, Number})
-@test Dict{String, Number}("1" => 1) in S
-@test !(Dict{String, String}("1" => "1") in S)
+#C = @setbuild(Complex)
+@test 1.0im in C
+@test !(1.0 in C)
 
-#T = setfromtype(Vector{Int64})
-@test Vector{Int64}([1,1]) in T
-@test !(Vector{Int32}([1,1]) in T)
+#D = @setbuild(Dict{String, Number})
+@test Dict{String, Number}("x" => 1 + 1im) in D
 
-#U = setfromtype(Array{Float64, 2})
-@test Array{Float64, 2}([1 1; 2 2]) in U
-@test !(Array{Float32, 2}([1 1; 2 2]) in U)
+#V = @setbuild(Vector{Int64})
+@test Int64[1,2,3] in V
+@test !(Int32[1,2,3] in V)
 
-#V = @setenum(1)
-@test 1 in V
-@test !(2 in V)
+#A = @setbuild(Array{Float64, 2})
+@test Float64[1 2;3 4] in A
+@test !(Float64[1; 2; 3; 4] in A)
 
-# x = 1
-#W = @setenum([x,2], type=Int64)
-@test 1 in W
-@test !(3 in W)
-@test !(Int32(1) in W)
+#S = @setbuild(MyStruct)
+@test MyStruct(1,2) in S
+@test !(1 in S)
 
-#X = @setenum([Int32(1),2], type=(Int64, Int32))
-@test Int64(2) in X
-@test !(Int64(1) in X)
+#G = @setbuild(Union{Integer, Float64})
+@test 1 in G 
+@test 1.0 in G 
+@test !(Float32(1) in G)
 
-#Y = @setenum(type=Union{Int64, Int32})
-@test !(1 in Y)
-push!(Y, 1)
-@test 1 in Y
+## Enumerated sets
+#ENUM1 = @setbuild([1, 2, 3])
+@test 1 in ENUM1 
+@test !(4 in ENUM1)
 
-#Z = I
+#ENUM2 = @setbuild(Int64[value, 2])
+@test value in ENUM2 
+@test !(Int32(value) in ENUM2)
+@test !(3 in ENUM2)
+push!(ENUM2, 3)
+@test 3 in ENUM2
+pop!(ENUM2, 3)
+@test !(3 in ENUM2)
+
+#ENUM3 = @setbuild(Union{Int64, Float64}[1, 2, 3.0])
+@test 3.0 in ENUM3 
+@test 1 in ENUM3 
+@test !(4 in ENUM3)
+
+#ENUM4 = @setbuild(Dict{String, String}[])
+d1 = Dict{String, String}("a" => "x")
+d2 = Dict{String, Integer}("a" => 1)
+@test !(d1 in ENUM4)
+push!(ENUM4, d1)
+@test d1 in ENUM4 
+@test !(d2 in ENUM4)
+
+## Cartesian sets
+#CART1 = @setbuild((I, I))
+@test (1, 1) in CART1
+@test !(1 in CART1)
+@test !((1.0, 1.0) in CART1)
+
+#CART2 = @setbuild((x in I, I))
+@test (1, 1) in CART2
+@test !(1 in CART2)
+@test !((1.0, 1.0) in CART2)
+
+#CART3 = @setbuild((x, y) in I)
+@test (1, 1) in CART3
+@test !(1 in CART3)
+@test !((1.0, 1.0) in CART3)
+
+#CART4 = @setbuild(((x, y) in I, z in I))
+@test (1, 1, 1) in CART4
+@test !(1 in CART4)
+@test !((1.0, 1.0, 1.0) in CART4)
+
+#CART5 = @setbuild((I^3, z in I))
+@test (1, 1, 1, 1) in CART5
+@test !(1 in CART5)
+@test !((1.0, 1.0, 1.0, 1.0) in CART5)
+
+## Predicate sets
+#PRED1 = @setbuild(x in I, true)
+@test 1 in PRED1
+@test !(1.0 in PRED1)
+
+#PRED2 = @setbuild(x in I, false)
+@test !(1 in PRED2)
+
+#PRED3 = @setbuild(x in I, 0 <= x < 10)
+@test 0 in PRED3
+@test !(10 in PRED3)
+
+#PRED4 = @setbuild(x in I, 5 <= x < 15)
+@test 5 in PRED4
+@test !(15 in PRED4)
+
+#PRED5 = @setbuild((x in PRED3, y in PRED4), x < 5 && y > 10)
+@test (4, 11) in PRED5
+@test !((9, 10) in PRED5)
+
+#PRED6 = @setbuild((x in PRED3, y in PRED4), c1*x + c2*y > 0, c1=-1, c2=1)
+@test (5, 10) in PRED6
+@test !((9, 5) in PRED6)
+
+#PRED7 = @setbuild(x in I, x + y > 0, y=value)
+@test -9 in PRED7
+@test !(-10 in PRED7)
+
+#PRED8 = @setbuild(x in @setbuild(Real), x > 0)
+@test 1 in PRED8
+@test 1.0 in PRED8
+@test !(1im in PRED8)
+
+## Mapped sets
+#MAPD1 = @setbuild(z in I, (x in PRED3) -> x + 5, z -> z - 5)
+@test 5 in MAPD1
+@test !(0 in MAPD1)
+
+#MAPD2 = @setbuild(z in I, (x in PRED4) -> x + 5, z -> func(z), func=myfunc)
+@test 10 in MAPD2
+@test !(5 in MAPD2)
+
+#MAPD3 = @setbuild(z in S, (x in PRED3, y in PRED4) -> mystruct(x, y),
+#                z -> (z.a, z.b), mystruct=MyStruct)
+@test MyStruct(0, 5) in MAPD3
+@test !(MyStruct(10, 15) in MAPD3)
+
+#MAPD4 = @setbuild(z in S, ((x, y) in PRED3) -> mystruct(x, y),
+#                z -> (z.a, z.b), mystruct=MyStruct)
+@test MyStruct(0, 0) in MAPD4
+@test !(MyStruct(10, 10) in MAPD4)
+
+#MAPD5 = @setbuild(z in S, ((x, y) in PRED5) -> mystruct(x[1], y[2]),
+#                z -> ((z.a, z.b), (z.a, z.b)), mystruct=MyStruct)
+@test MyStruct(4, 11) in MAPD5
+@test !(MyStruct(9, 10) in MAPD5)
+
+#MAPD6 = @setbuild(z in S, ((x, y) in PRED3) -> mystruct(x, y),
+#                z -> [(z.a, z.b), (z.b, z.a)], mystruct=MyStruct)
+@test MyStruct(5, 5) in MAPD6
+@test !(MyStruct(10, 10) in MAPD6)
+
+#MAPD7 = @setbuild(x in I, (y in I) -> y + 1, x -> x - 1,
+#                0 <= x < 10, 0 <= y < 10)
+@test 1 in MAPD7
+@test !(10 in MAPD7)

@@ -5,8 +5,6 @@ using Test
 
 @testset "Functionality" begin
 
-    # Write your tests here.
-
     include("creations.jl")
     include("membership.jl")
     include("operations.jl")
