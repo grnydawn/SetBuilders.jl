@@ -1,6 +1,5 @@
 # membership.jl : SetBuilder Set Membership Checks
 
-
 function is_member(set::EnumSet, elem)
 
     type_elem = typeof(elem)

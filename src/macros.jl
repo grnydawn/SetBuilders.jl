@@ -1,10 +1,6 @@
 # macros.jl : SetBuilder Macro User Interface
 #
 
-function pop_kwarg!(kwarg, item, default)
-
-end
-
 function get_envmeta(kwargs)
 
     env  = :(Dict{Symbol, Any}())

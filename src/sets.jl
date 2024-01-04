@@ -1,7 +1,6 @@
 # sets.jl : SetBuilder Set Types
 #
 
-
 # Top-level type of all sets
 abstract type SBSet end
 

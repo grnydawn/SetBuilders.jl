@@ -1,6 +1,5 @@
 # setops.jl : SetBuilder Set Operations
 
-
 function do_push!(set::EnumSet, elem)
 
     type_elem = typeof(elem)
