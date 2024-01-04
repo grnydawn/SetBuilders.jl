@@ -94,12 +94,3 @@ MAPD6 = @setbuild(z in S, ((x, y) in PRED3) -> mystruct(x, y),
 
 MAPD7 = @setbuild(x in I, (y in I) -> y + 1, x -> x - 1,
                 0 <= x < 10, 0 <= y < 10)
-
-# generating tests
-for name in names(Main)
-    obj = getfield(Main, name)
-
-    if obj isa SBSet
-        @test obj isa SBSet
-    end
-end
