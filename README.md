@@ -53,7 +53,7 @@ Once installed, the `SetBuilders` package can be loaded with `using SetBuilders`
 using SetBuilders
 ```
 
-### Set Creations
+### Set Creation Examples
 
 SetBuilders provides one macro, `@setbuild`, for creating various types of
 sets, including sets from Julia data types, predicate sets, partially
@@ -109,7 +109,7 @@ Q = @setbuild(z in S, (x in H, y in J) -> mystruct(x, y),
                 z -> (z.a, z.b), mystruct=MyStruct)
 ```
 
-### Set Membership Tests
+### Set Membership Examples
 
 Once a set is created, checking if an object is a member of the set is
 straightforward using the `in` or `∈` operators.
@@ -217,7 +217,7 @@ Q = @setbuild(z in S, (x in H, y in J) -> mystruct(x, y),
 
 ```
 
-### Set Operation Tests
+### Set Operation Examples
 
 SetBuilders also offers standard set operations such as union and intersection.
 
