@@ -23,12 +23,12 @@ them using set operations such as unions and intersections, and check if an
 object is a member of the set.
 
 ```julia
-I = @setbuild(Integer)          # creates a set from Julia Integer type
-A = @setbuild(x ∈ I, 0 < x < 4) # creates a set with the predicate of "0 < x < 4"
-B = @setbuild(x ∈ I, 2 < x < 6) # creates a set with the predicate of "2 < x < 6"
-C = A ∩ B                       # creates an intersection with the two sets
-@assert 3 ∈ C                   # => true, 3 is a member of the set C
-@assert !(4 ∈ C)                # => true, 4 is not a member of the set C
+I = @setbuild(Integer)           # creates a set from Julia Integer type
+A = @setbuild(x ∈ I, 0 < x < 4)  # creates a set with the predicate of "0 < x < 4"
+B = @setbuild(x in I, 2 < x < 6) # creates a set with the predicate of "2 < x < 6"
+C = A ∩ B                        # creates an intersection with the two sets
+@assert 3 ∈ C                    # => true, 3 is a member of the set C
+@assert !(4 ∈ C)                 # => true, 4 is not a member of the set C
 ```
 
 ## Installation
