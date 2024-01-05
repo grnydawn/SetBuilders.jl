@@ -1,12 +1,12 @@
 # SetBuilders.jl
 
-Julia Predicate and Enumerated Set Package
+Julia Package for Predicate and Partially Enumerable Sets
 
 
 ## Introduction
 
 Most of programming languages including Julia support a certain type of
-enumerated sets, but not the type of predicate sets in mathematical sense.
+enumerable sets, but not the type of predicate sets in mathematical sense.
 For example, in Julia, we can create a set having integer values like
 
 ```julia
@@ -56,8 +56,8 @@ using SetBuilders
 ### Set Creations
 
 SetBuilders provides one macro, `@setbuild`, for creating various types of
-sets, including sets from Julia data types, predicate sets, enumerated sets,
-and mapped sets.
+sets, including sets from Julia data types, predicate sets, partially
+enumerable sets, and mapped sets.
 
 Here are examples of set creations:
 ```
@@ -84,7 +84,7 @@ I = @setbuild(Integer)
 R = @setbuild(Real)
 S = @setbuild(MyStruct)
 
-# Enumerated sets
+# Partially enumerable sets
 A = @setbuild([1, 2, 3])
 B = @setbuild(Int64[value, 2])
 C = @setbuild(Dict{String, String}[])
@@ -137,7 +137,7 @@ S = @setbuild(MyStruct)
 @assert MyStruct(1,2) in S
 @assert !(1 in S)
 
-# Enumerated sets
+# Partially enumeratable sets
 A = @setbuild([1, 2, 3])
 @assert 1 in A
 @assert !(4 in A)

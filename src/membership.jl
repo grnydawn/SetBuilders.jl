@@ -1,6 +1,6 @@
 # membership.jl : SetBuilder Set Membership Checks
 
-function is_member(set::EnumSet, elem)
+function is_member(set::PartiallyEnumerableSet, elem)
 
     type_elem = typeof(elem)
 
@@ -113,7 +113,8 @@ function is_member(set::MappedSet, coelem)
     try
         _doelems = Base.invokelatest(bfunc, coelems...)
     catch err
-        error("Invoking set expression, $(set._backward_map[1]), is failed: $err")
+        error("Invoking set expression, $(set._backward_map[1]), " *
+              "is failed: $err")
     end
 
     # domain setvar names
@@ -131,12 +132,14 @@ function is_member(set::MappedSet, coelem)
         # generate forward func
         ffunc = sb_eval(set._forward_map[1], set._env)
 
-        # generate coelem2 from the generated doelem using the generated forward func
+        # generate coelem2 from the generated doelem using the generated
+        # forward func
         _coelems2 = nothing
         try
             _coelems2 = Base.invokelatest(ffunc, doelem...)
         catch err
-            error("Invoking set expression, $(set._forward_map[1]), is failed: $err")
+            error("Invoking set expression, $(set._forward_map[1]), " *
+                  "is failed: $err")
         end
 
         # filter coelem2

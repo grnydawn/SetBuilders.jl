@@ -1,6 +1,6 @@
 # setops.jl : SetBuilder Set Operations
 
-function do_push!(set::EnumSet, elem)
+function do_push!(set::PartiallyEnumerableSet, elem)
 
     type_elem = typeof(elem)
 
@@ -13,7 +13,7 @@ function do_push!(set::EnumSet, elem)
     end
 end
 
-function do_pop!(set::EnumSet, elem)
+function do_pop!(set::PartiallyEnumerableSet, elem)
 
     type_elem = typeof(elem)
 
@@ -90,8 +90,8 @@ function do_setop(setop::Symbol, sets::NTuple{N, SBSet} where N) :: SBSet
     end
 end
 
-Base.push!(set::EnumSet, elem)  = do_push!(set, elem)
-Base.pop!(set::EnumSet, elem)   = do_pop!(set, elem)
+Base.push!(set::PartiallyEnumerableSet, elem)  = do_push!(set, elem)
+Base.pop!(set::PartiallyEnumerableSet, elem)   = do_pop!(set, elem)
 
 complement(set::SBSet)          = do_setop(:setdiff, (UniversalSet(), set))
 

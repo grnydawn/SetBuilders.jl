@@ -9,9 +9,11 @@ function get_envmeta(kwargs)
     for kwarg in kwargs
         if kwarg isa Expr && kwarg.head == :(=)
             if startswith(string(kwarg.args[1]), "sb_")
-                push!(meta.args, :($(QuoteNode(kwarg.args[1])) => $(esc(kwarg.args[2]))))
+                push!(meta.args, :($(QuoteNode(kwarg.args[1])) =>
+                                   $(esc(kwarg.args[2]))))
             else
-                push!(env.args, :($(QuoteNode(kwarg.args[1])) => $(esc(kwarg.args[2]))))
+                push!(env.args, :($(QuoteNode(kwarg.args[1])) =>
+                                  $(esc(kwarg.args[2]))))
             end
         else
             error("Syntax error: $kwarg.")
@@ -36,10 +38,14 @@ function get_setvars(arg::Union{Symbol, Expr})
             elseif svar.head == :call
                 if svar.args[1] == :in
                     if svar.args[2] isa Symbol
-                        push!(setvars.args, Expr(:tuple, QuoteNode(svar.args[2]), esc(svar.args[3])))
+                        push!(setvars.args, Expr(:tuple,
+                                                 QuoteNode(svar.args[2]),
+                                                 esc(svar.args[3])))
                     elseif svar.args[2].head == :tuple
                         for ssvar in svar.args[2].args
-                            push!(setvars.args, Expr(:tuple, QuoteNode(ssvar), esc(svar.args[3])))
+                            push!(setvars.args, Expr(:tuple,
+                                                     QuoteNode(ssvar),
+                                                     esc(svar.args[3])))
                         end
                     else
                         error("Syntax error: $arg.")
@@ -48,7 +54,8 @@ function get_setvars(arg::Union{Symbol, Expr})
                 elseif svar.args[1] == :^
                     if svar.args[2] isa Symbol && svar.args[3] isa Integer
                         for _ in 1:svar.args[3]
-                            push!(setvars.args, Expr(:tuple, nothing, esc(svar.args[2])))
+                            push!(setvars.args, Expr(:tuple, nothing,
+                                                     esc(svar.args[2])))
                         end
                     else
                         error("Syntax error: $arg.")
@@ -63,11 +70,13 @@ function get_setvars(arg::Union{Symbol, Expr})
         end
     elseif arg.head == :call && (arg.args[1] == :in || arg.args[1] == :∈)
         if arg.args[2] isa Symbol
-            push!(setvars.args, Expr(:tuple, QuoteNode(arg.args[2]), esc(arg.args[3])))
+            push!(setvars.args, Expr(:tuple, QuoteNode(arg.args[2]),
+                                     esc(arg.args[3])))
 
         elseif arg.args[2] isa Expr && arg.args[2].head == :tuple
             for svar in arg.args[2].args
-                push!(setvars.args, Expr(:tuple, QuoteNode(svar), esc(arg.args[3])))
+                push!(setvars.args, Expr(:tuple, QuoteNode(svar),
+                                         esc(arg.args[3])))
             end
         else
             error("Syntax error: $arg.")
@@ -104,16 +113,19 @@ end
 function create_enumset(elems::Expr) ::Expr
 
     if length(elems.args) == 0
-        error("EnumSet requires to specify Julia type of elements: $elems.")
+        error("PartiallyEnumerableSet requires to specify Julia type of " *
+              "elements: $elems.")
     end
 
     return quote
         _sb_enum_type = find_param($elems)
         _sb_enum_elems= $(esc(elems))
         if isconcretetype(_sb_enum_type)
-            EnumSet(Dict(_sb_enum_type => Set{_sb_enum_type}(_sb_enum_elems)))
+            PartiallyEnumerableSet(Dict(_sb_enum_type =>
+                                        Set{_sb_enum_type}(_sb_enum_elems)))
         else
-            error("EnumSet requires concreate type, but got " * string(_sb_enum_type) * ".")
+            error("PartiallyEnumerableSet requires concreate type, but got " *
+                  string(_sb_enum_type) * ".")
         end
     end
 end
@@ -143,11 +155,12 @@ function create_enumset(type::Union{Symbol, Expr}, elems::Vector{Any}) ::Expr
             if isconcretetype(_t)
                 push!(_sb_type2set, _t => Set{_t}())
             else
-                error("EnumSet requires concreate type, but got " * string(_t) * ".")
+                error("PartiallyEnumerableSet requires a concreate type, " *
+                      "but got " * string(_t) * ".")
             end
         end
 
-        _sb_enum_set = EnumSet(Dict(_sb_type2set))
+        _sb_enum_set = PartiallyEnumerableSet(Dict(_sb_type2set))
 
         for e in $elems
             push!(_sb_enum_set, Base.eval(Main, e))
@@ -208,7 +221,8 @@ function proc_twoargs(part1, part2, env, meta)
     setvars = get_setvars(part1)
 
     if part2 isa Expr && part2.head == :(->)
-        error("Syntax error: a mapping is provided at the place for a predicate at $part2")
+        error("Syntax error: a mapping is provided at the place for " *
+              "a predicate at $part2")
     end
 
     pred    = QuoteNode(part2)

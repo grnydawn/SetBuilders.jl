@@ -45,7 +45,7 @@
 @test 1.0 in G 
 @test !(Float32(1) in G)
 
-## Enumerated sets
+## Partially enumerable sets
 #ENUM1 = @setbuild([1, 2, 3])
 @test 1 in ENUM1 
 @test !(4 in ENUM1)

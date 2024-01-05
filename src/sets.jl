@@ -27,14 +27,14 @@ function Base.show(io::IO, s::TypeSet{T}) where T
     print(io, "TypeSet($T)")
 end
 
-# Enumerated set
-struct EnumSet <: SBSet
+# PartiallyPartiallyEnumerableerated set
+struct PartiallyEnumerableSet <: SBSet
     _elems::Dict{DataType, Set{Any}}
 end
 
-function Base.show(io::IO, s::EnumSet)
+function Base.show(io::IO, s::PartiallyEnumerableSet)
     dtypes = ["{$k}*$(length(v))" for (k,v) in s._elems]
-    print(io, """EnumSet([$(join(dtypes, ", "))])""")
+    print(io, """PartiallyEnumerableSet([$(join(dtypes, ", "))])""")
 end
 
 # Set mapped to itself with filtering
