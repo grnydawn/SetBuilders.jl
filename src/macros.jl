@@ -1,7 +1,7 @@
 # macros.jl : SetBuilder Macro User Interface
 #
 
-function get_envmeta(kwargs)
+function get_envmeta(kwargs) :: Tuple{Expr, Expr}
 
     env  = :(Dict{Symbol, Any}())
     meta = :(Dict{Symbol, Any}())
@@ -30,32 +30,45 @@ function get_setvars(arg::Union{Symbol, Expr})
     if arg isa Symbol
         push!(setvars.args, Expr(:tuple, nothing, esc(arg)))
 
-    elseif arg.head == :tuple
-        for svar in arg.args
-            if svar isa Symbol
-                push!(setvars.args, Expr(:tuple, nothing, esc(svar)))
+    elseif arg isa Expr
+        if arg.head == :tuple
+            for svar in arg.args
+                if svar isa Symbol
+                    push!(setvars.args, Expr(:tuple, nothing, esc(svar)))
 
-            elseif svar.head == :call
-                if svar.args[1] == :in
-                    if svar.args[2] isa Symbol
-                        push!(setvars.args, Expr(:tuple,
-                                                 QuoteNode(svar.args[2]),
-                                                 esc(svar.args[3])))
-                    elseif svar.args[2].head == :tuple
-                        for ssvar in svar.args[2].args
-                            push!(setvars.args, Expr(:tuple,
-                                                     QuoteNode(ssvar),
-                                                     esc(svar.args[3])))
-                        end
-                    else
-                        error("Syntax error: $arg.")
-                    end
+                elseif svar isa Expr
+                    if svar.head::Symbol == :call
+                        if svar.args[1]::Symbol == :in
+                            mysvar = svar.args[2]
+                            if mysvar isa Symbol
+                                push!(setvars.args, Expr(:tuple,
+                                                         QuoteNode(mysvar),
+                                                         esc(svar.args[3])))
+                            elseif mysvar isa Expr
+                                if mysvar.head::Symbol == :tuple
+                                    for ssvar in mysvar.args
+                                        push!(setvars.args, Expr(:tuple,
+                                                                 QuoteNode(ssvar),
+                                                                 esc(svar.args[3])))
+                                    end
+                                else
+                                    error("Syntax error: $(string(mysvar)).")
+                                end
+                            else
+                                error("Syntax error: $(string(mysvar)).")
+                            end
 
-                elseif svar.args[1] == :^
-                    if svar.args[2] isa Symbol && svar.args[3] isa Integer
-                        for _ in 1:svar.args[3]
-                            push!(setvars.args, Expr(:tuple, nothing,
-                                                     esc(svar.args[2])))
+                        elseif svar.args[1]::Symbol == :^
+                            if svar.args[2] isa Symbol && svar.args[3] isa Integer
+                                for _ in 1:svar.args[3]
+                                    push!(setvars.args, Expr(:tuple, nothing,
+                                                             esc(svar.args[2])))
+                                end
+                            else
+                                error("Syntax error: $(svar.args).")
+                            end
+                        else
+                            error("Syntax error: $arg.")
                         end
                     else
                         error("Syntax error: $arg.")
@@ -63,20 +76,21 @@ function get_setvars(arg::Union{Symbol, Expr})
                 else
                     error("Syntax error: $arg.")
                 end
+
+            end
+        elseif (arg.head::Symbol == :call && (arg.args[1]::Symbol == :in ||
+                                              arg.args[1]::Symbol == :∈))
+            if arg.args[2] isa Symbol
+                push!(setvars.args, Expr(:tuple, QuoteNode(arg.args[2]),
+                                         esc(arg.args[3])))
+
+            elseif arg.args[2] isa Expr && arg.args[2].head::Symbol == :tuple
+                for svar in arg.args[2].args
+                    push!(setvars.args, Expr(:tuple, QuoteNode(svar),
+                                             esc(arg.args[3])))
+                end
             else
                 error("Syntax error: $arg.")
-            end
-
-        end
-    elseif arg.head == :call && (arg.args[1] == :in || arg.args[1] == :∈)
-        if arg.args[2] isa Symbol
-            push!(setvars.args, Expr(:tuple, QuoteNode(arg.args[2]),
-                                     esc(arg.args[3])))
-
-        elseif arg.args[2] isa Expr && arg.args[2].head == :tuple
-            for svar in arg.args[2].args
-                push!(setvars.args, Expr(:tuple, QuoteNode(svar),
-                                         esc(arg.args[3])))
             end
         else
             error("Syntax error: $arg.")
@@ -205,7 +219,7 @@ function proc_onearg(arg, env, meta)
         elseif arg.head == :curly
             return :(SetBuilders.TypeSet{$arg}())
 
-        elseif arg.head == :call && arg.args[1] == :in
+        elseif arg.head::Symbol == :call && arg.args[1]::Symbol == :in
             return create_cartesianset(get_setvars(arg), env, meta)
 
         else
@@ -260,18 +274,19 @@ end
 
 macro setbuild(args...)
 
-    kwargs = Tuple([])
+    #kwargs = Tuple{typeofargs[end:end]
+
+    env  = :(Dict{Symbol, Any}())
+    meta = :(Dict{Symbol, Any}())
 
     # split args to (setargs, setkwargs)
     for (idx, arg) in enumerate(args)
         if arg isa Expr && arg.head == :(=)
-            kwargs  = Tuple(args[idx:end])
+            env, meta = get_envmeta(args[idx:end])
             args    = args[1:(idx-1)]
             break
         end
     end
-
-    env, meta = get_envmeta(kwargs)
 
     NARGS = length(args)
 
@@ -287,4 +302,24 @@ macro setbuild(args...)
     else
         return proc_args(args, env, meta)
     end
+end
+
+macro setimport(args...)
+
+    NARGS = length(args)
+
+    if NARGS == 0
+        error("No path is specified to open for set defition.")
+    end    
+
+    target = args[1]
+
+    if !(target isa String)
+        target = esc(target)
+    end
+
+    env, meta = get_envmeta(args[2:end])
+
+    return :(import_sets($target, $env, $meta))
+
 end

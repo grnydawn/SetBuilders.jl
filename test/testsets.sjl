@@ -1,0 +1,11 @@
+module MySetModule
+
+export IMPT1
+
+@expect(x::Integer)
+@option(y::Integer)
+
+I = @setbuild(Integer)
+IMPT1 = @setbuild(z in I, z + x > 0, x=x)
+
+end

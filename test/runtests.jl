@@ -8,6 +8,7 @@ using Test
     include("creations.jl")
     include("membership.jl")
     include("operations.jl")
+    include("imports.jl")
 end
 
 @testset "Performance" begin

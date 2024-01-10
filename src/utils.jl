@@ -1,6 +1,6 @@
 # utils.jl
 
-setops_syms = Dict{Symbol, String}(
+setops_syms = Dict{Symbol, AbstractString}(
                     :union      => "∪",
                     :intersect  => "∩",
                     :setdiff    => "-",
@@ -9,7 +9,7 @@ setops_syms = Dict{Symbol, String}(
 
 find_param(vect::Vector{T}) where T  = T
 
-function sb_eval(expr, env::Dict{Symbol, Any})
+function sb_eval(expr, env::Dict{Symbol, Any}=Dict{Symbol, Any}())
 
     M = Module(:MyModule)
     for (k, v) in env
@@ -18,7 +18,8 @@ function sb_eval(expr, env::Dict{Symbol, Any})
 
     try
         return Base.eval(M, expr)
-    catch
+
+    catch err
         error("Evaluating set expression, $expr, is failed: $err")
     end
 end
