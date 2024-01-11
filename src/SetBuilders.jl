@@ -1,6 +1,6 @@
 module SetBuilders
 
-export SBSet, @setbuild, @setimport, complement
+export SBSet, @setbuild, @setimport, is_member, complement
 
 include("utils.jl")
 include("sets.jl")

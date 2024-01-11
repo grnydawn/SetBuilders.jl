@@ -19,7 +19,7 @@ X = @setbuild(Union{Int64, Int32}[Int32(-1), Int32(1), 2])
 @test all(x -> x ∈ A, 0:9)
 @test all(x -> !(x in A), (-1, 10))
 
-@test all(x -> x in union(A, B), 0:14)
+@test all(x -> x in union(A, B, sb_on_error=1), 0:14)
 @test all(x -> x in A ∪ B, 0:14)
 @test all(x -> !(x in union(A, B)), (-1, 15))
 @test all(x -> x in union(A, U), -1:15)

@@ -124,7 +124,7 @@ function create_cartesianset(setvars::Expr, env, meta) ::Expr
     end
 end
 
-function create_enumset(elems::Expr) ::Expr
+function create_enumset(elems::Expr, meta) ::Expr
 
     if length(elems.args) == 0
         error("PartiallyEnumerableSet requires to specify Julia type of " *
@@ -136,7 +136,8 @@ function create_enumset(elems::Expr) ::Expr
         _sb_enum_elems= $(esc(elems))
         if isconcretetype(_sb_enum_type)
             PartiallyEnumerableSet(Dict(_sb_enum_type =>
-                                        Set{_sb_enum_type}(_sb_enum_elems)))
+                                        Set{_sb_enum_type}(_sb_enum_elems)),
+                                   $meta)
         else
             error("PartiallyEnumerableSet requires concreate type, but got " *
                   string(_sb_enum_type) * ".")
@@ -144,7 +145,7 @@ function create_enumset(elems::Expr) ::Expr
     end
 end
 
-function create_enumset(type::Union{Symbol, Expr}, elems::Vector{Any}) ::Expr
+function create_enumset(type::Union{Symbol, Expr}, elems::Vector{Any}, meta) ::Expr
 
     types = Expr(:tuple)
 
@@ -174,7 +175,7 @@ function create_enumset(type::Union{Symbol, Expr}, elems::Vector{Any}) ::Expr
             end
         end
 
-        _sb_enum_set = PartiallyEnumerableSet(Dict(_sb_type2set))
+        _sb_enum_set = PartiallyEnumerableSet(Dict(_sb_type2set), $meta)
 
         for e in $elems
             push!(_sb_enum_set, Base.eval(Main, e))
@@ -197,7 +198,7 @@ function proc_onearg(arg, env, meta)
                     error("Syntax error: re-building SBSet is not allowed.")
 
                 elseif $arg isa DataType || $arg isa UnionAll
-                    SetBuilders.TypeSet{$arg}()
+                    SetBuilders.TypeSet{$arg}($meta)
 
                 else
                     error("Incorrect type: " * string($arg))
@@ -208,16 +209,16 @@ function proc_onearg(arg, env, meta)
     elseif arg isa Expr
 
         if arg.head == :vect
-            return create_enumset(arg)
+            return create_enumset(arg, meta)
 
         elseif arg.head == :tuple
             return create_cartesianset(get_setvars(arg), env, meta)
 
         elseif arg.head == :ref
-            return create_enumset(arg.args[1], arg.args[2:end])
+            return create_enumset(arg.args[1], arg.args[2:end], meta)
 
         elseif arg.head == :curly
-            return :(SetBuilders.TypeSet{$arg}())
+            return :(SetBuilders.TypeSet{$arg}($meta))
 
         elseif arg.head::Symbol == :call && arg.args[1]::Symbol == :in
             return create_cartesianset(get_setvars(arg), env, meta)
@@ -273,8 +274,6 @@ function proc_args(args, env, meta)
 end
 
 macro setbuild(args...)
-
-    #kwargs = Tuple{typeofargs[end:end]
 
     env  = :(Dict{Symbol, Any}())
     meta = :(Dict{Symbol, Any}())

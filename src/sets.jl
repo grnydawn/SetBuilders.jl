@@ -19,7 +19,9 @@ function Base.show(io::IO, s::UniversalSet)
 end
 
 # Set for Julia types
-struct TypeSet{T} <: SBSet where T end
+struct TypeSet{T} <: SBSet where T
+    _meta::Dict{Symbol, Any}
+end
 find_param(set::TypeSet{T}) where T  = T
 
 function Base.show(io::IO, s::TypeSet{T}) where T
@@ -30,6 +32,7 @@ end
 # PartiallyPartiallyEnumerableerated set
 struct PartiallyEnumerableSet <: SBSet
     _elems::Dict{DataType, Set{Any}}
+    _meta::Dict{Symbol, Any}
 end
 
 function Base.show(io::IO, s::PartiallyEnumerableSet)
@@ -71,6 +74,7 @@ end
 struct CompositeSet <: SBSet
     _op::Symbol
     _sets::NTuple{N, SBSet} where N
+    _meta::Dict{Symbol, Any}
 end
 
 function Base.show(io::IO, s::CompositeSet)

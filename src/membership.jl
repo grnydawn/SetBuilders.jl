@@ -1,56 +1,79 @@
 # membership.jl : SetBuilder Set Membership Checks
 
-function is_member(set::PartiallyEnumerableSet, elem)
+
+function _event(set::SBSet, check, data, kwargs)
+
+    if haskey(kwargs, :sb_on_member) && check == true
+        kwargs[:sb_on_member](data)
+
+    elseif haskey(kwargs, :sb_on_notamember) && check == false
+        kwargs[:sb_on_notamember](data)
+    end
+
+    if haskey(set._meta, :sb_on_member) && check == true
+        set._meta[:sb_on_member](data)
+
+    elseif haskey(set._meta, :sb_on_notamember) && check == false
+        set._meta[:sb_on_notamember](data)
+    end
+
+    return check
+end
+
+function is_member(set::PartiallyEnumerableSet, elem; kwargs...)
 
     type_elem = typeof(elem)
 
     # NOTE: having SBSet as an element is not supported yet
     #       due to lack of the is_equal function of SBSets
     if haskey(set._elems, type_elem)
-        return elem in set._elems[type_elem]
-
-    else
-        return false
+        return _event(set, elem in set._elems[type_elem], elem, kwargs)
     end
+
+    return _event(set, false, elem, kwargs)
 end
 
-function is_member(set::PredicateSet, elem)
+function is_member(set::PredicateSet, elem; kwargs...) :: Bool
 
     if length(set._vars) == 1
-        elem in  set._vars[1][2] || return false
+        elem in  set._vars[1][2] || return _event(set, false, elem, kwargs)
 
         if set._pred isa Bool
-            return set._pred
+            return _event(set, set._pred, elem, kwargs)
 
         else
             varmap = Dict{Symbol, Any}(set._vars[1][1] => elem)
-            return sb_eval(set._pred, merge(varmap, set._env))
+            return _event(set, sb_eval(set._pred, merge(varmap, set._env)),
+                          elem, kwargs)
         end
 
     else
-        if length(set._vars) != length(elem)
-            return false
-        end
+        length(set._vars) == length(elem) || return _event(set,
+                                                        false, elem, kwargs)
 
         varmap = Dict{Symbol, Any}()
 
         for ((v, s), e) in zip(set._vars, elem)
-            e in s || return false
+            e in s || return _event(set, false, e, kwargs)
+
             if v isa Symbol
                 varmap[v] = e
             end
         end
 
         if set._pred isa Bool
-            return set._pred
+            return _event(set, set._pred, elem, kwargs)
 
         else
-            return sb_eval(set._pred, merge(varmap, set._env))
+            return _event(set, sb_eval(set._pred, merge(varmap, set._env)),
+                                        elem, kwargs)
         end
     end 
+
+    return _event(set, false, elem, kwargs)
 end
 
-function is_member(set::MappedSet, coelem)
+function is_member(set::MappedSet, coelem; kwargs...)
 
     function _filter_elems(elems, check, names)
 
@@ -96,14 +119,15 @@ function is_member(set::MappedSet, coelem)
     end
 
     # check coelem in codomain
-    _check_member(coelem, set._codomain) || return false
+    _check_member(coelem, set._codomain) || return _event(set, false, coelem,
+                                                            kwargs)
 
     # codomain setvar names
     conames = [n[1] for n in set._codomain]
 
     # filter doelems
     coelems = _filter_elems(coelem, set._forward_map[2], conames)
-    length(coelems) == 0 && return false
+    length(coelems) == 0 && return _event(set, false, coelem, kwargs)
     
     # generate backward func
     bfunc = sb_eval(set._backward_map[1], set._env)
@@ -147,26 +171,28 @@ function is_member(set::MappedSet, coelem)
 
         for coelem2 in coelems2
             # check coelem == coelem2
-            coelem == coelem2 && return true
+            coelem == coelem2 && return _event(set, true, coelem, kwargs)
         end
     end
 
-    return false
+    return _event(set, false, coelem, kwargs)
 end
 
-function is_member(set::CompositeSet, elem)
+function is_member(set::CompositeSet, elem; kwargs...)
 
     length(set._sets) == 0 && return false
 
     if set._op == :union
-        return any(s -> elem in s, set._sets)
+        return _event(set, any(s -> elem in s, set._sets), elem, kwargs)
 
     elseif set._op == :intersect
-        return all(s -> elem in s, set._sets)
+        return _event(set, all(s -> elem in s, set._sets), elem, kwargs)
 
     elseif set._op == :setdiff
 
-        return elem in set._sets[1] && all(s -> !(elem in s), set._sets[2:end])
+        return _event(set, elem in set._sets[1] && all(s -> !(elem in s),
+                                                        set._sets[2:end]),
+                                                        elem, kwargs)
 
     elseif set._op == :symdiff
 
@@ -176,15 +202,19 @@ function is_member(set::CompositeSet, elem)
             work_set = union((work_set - s), (s - work_set))
         end
 
-        return elem in work_set
+        return _event(set, elem in work_set, elem, kwargs)
     end
 
     println("WARN: set operation, $(set._op), is not implemented yet.")
 
-    return false
+    return _event(set, false, elem, kwargs)
 end
 
-is_member(set::TypeSet, e)      = e isa find_param(set)
+function is_member(set::TypeSet, elem; kwargs...)
+
+    return _event(set, elem isa find_param(set), elem, kwargs)
+    
+end
 
 Base.:in(e, set::SBSet)         = is_member(set, e)
 Base.:in(e, set::EmptySet)      = false
