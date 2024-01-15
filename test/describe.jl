@@ -4,7 +4,7 @@
 
 ## Empty set
 #E = @setbuild()
-@test describe(E) == "EmptySet(ϕ)"
+@test describe(E) == "EmptySet(Ø)"
 
 ## Universal set
 #U = @setbuild(Any)

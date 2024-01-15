@@ -33,7 +33,7 @@ function describe(set::EmptySet; prepend="", prefix="", depth=0,
     mstr = get_mark(set, mark)
     tabs = (mstr isa AbstractString ? TAB(depth, mark=mstr) : TAB(depth))
 
-    return tabs * prepend * "EmptySet(ϕ)"
+    return tabs * prepend * "EmptySet(Ø)"
 end
 
 function describe(set::UniversalSet; prepend="", prefix="", depth=0,
