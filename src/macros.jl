@@ -108,6 +108,10 @@ function get_forward_mapping(arg::Expr)
         names   = Expr(:tuple, (v.args[1].value for v in setvars.args)...)
         arg.args[1] = names
 
+        if arg.args[2].args[1] isa LineNumberNode
+            deleteat!(arg.args[2].args, 1)
+        end
+
         return setvars, QuoteNode(arg)
     else
         error("Syntax error: $arg.")
@@ -117,8 +121,16 @@ end
 function create_cartesianset(setvars::Expr, env, meta) ::Expr
 
     if setvars.head == :tuple
-        return :(SetBuilders.PredicateSet($setvars, true, $env, $meta))
+        idx = 1
 
+        for setvar in setvars.args
+            if setvar.args[1] isa Nothing
+                setvar.args[1] = QuoteNode(Symbol("c$idx"))
+                idx += 1
+            end
+        end
+
+        return :(SetBuilders.PredicateSet($setvars, true, $env, $meta))
     else
         error("Syntax error: $setvars.")
     end
@@ -185,7 +197,7 @@ function create_enumset(type::Union{Symbol, Expr}, elems::Vector{Any}, meta) ::E
 
 end
 
-function proc_onearg(arg, env, meta)
+function proc_build_onearg(arg, env, meta)
 
     if arg isa Symbol
         if arg == :Any
@@ -231,7 +243,7 @@ function proc_onearg(arg, env, meta)
     end
 end
 
-function proc_twoargs(part1, part2, env, meta)
+function proc_build_twoargs(part1, part2, env, meta)
 
     setvars = get_setvars(part1)
 
@@ -245,10 +257,14 @@ function proc_twoargs(part1, part2, env, meta)
     return :(SetBuilders.PredicateSet($setvars, $pred, $env, $meta))
 end
 
-function proc_args(args, env, meta)
+function proc_build_args(args, env, meta)
 
     codomain    = get_setvars(args[1])
     domain, fmap= get_forward_mapping(args[2])
+
+    if args[3].args[2].args[1] isa LineNumberNode
+        deleteat!(args[3].args[2].args, 1)
+    end
     bmap        = QuoteNode(args[3])
 
     NARGS = length(args)
@@ -273,7 +289,7 @@ function proc_args(args, env, meta)
                                         $codomain, $env, $meta))
 end
 
-macro setbuild(args...)
+function split_args(args)
 
     env  = :(Dict{Symbol, Any}())
     meta = :(Dict{Symbol, Any}())
@@ -287,28 +303,37 @@ macro setbuild(args...)
         end
     end
 
+    return args, env, meta
+end
+
+macro setbuild(args...)
+
+    args, env, meta = split_args(args)
+
     NARGS = length(args)
 
     if NARGS == 0
         return :(SetBuilders.EmptySet())
 
     elseif NARGS == 1
-        return proc_onearg(args[1], env, meta)
+        return proc_build_onearg(args[1], env, meta)
 
     elseif NARGS == 2
-        return proc_twoargs(args[1], args[2], env, meta)
+        return proc_build_twoargs(args[1], args[2], env, meta)
 
     else
-        return proc_args(args, env, meta)
+        return proc_build_args(args, env, meta)
     end
 end
 
-macro setimport(args...)
+function print_pkg_help()
+    println("T.B.D.")
+end
 
-    NARGS = length(args)
+function proc_pkg_load(args, env, meta)
 
-    if NARGS == 0
-        error("No path is specified to open for set defition.")
+    if length(args) == 0
+        error("No path is specified for loading a set definition package.")
     end    
 
     target = args[1]
@@ -317,8 +342,32 @@ macro setimport(args...)
         target = esc(target)
     end
 
-    env, meta = get_envmeta(args[2:end])
+    return :(load_pkg($target, $env, $meta))
+end
 
-    return :(import_sets($target, $env, $meta))
+function proc_pkg_command(arg, args, env, meta) :: Expr
 
+    if arg isa Symbol
+        if arg == :load
+            return proc_pkg_load(args, env, meta)
+
+        else
+            error("@setpkg command, $arg, is not supported.")
+        end
+
+    else
+        error("@setpkg command is not a symbol type: $arg.")
+    end
+end
+
+macro setpkg(args...)
+
+    args, env, meta = split_args(args)
+
+    if length(args) == 0
+        return print_pkg_help()
+
+    else
+        return proc_pkg_command(args[1], args[2:end], env, meta)
+    end
 end

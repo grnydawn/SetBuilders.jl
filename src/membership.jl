@@ -1,198 +1,360 @@
 # membership.jl : SetBuilder Set Membership Checks
 
+# TODO: function compositon : setA -> setB -> setC ==> setA -> setC
+# TODO: debug=true, on_notamember=(h->println(describe(h[1].set, mark=h[end].set)))
+# TODO: rewriting set operations to CNF??
 
-function _event(set::SBSet, check, data, kwargs)
+function _event(set, eventtype, event, hist, kwargs)
 
-    if haskey(kwargs, :sb_on_member) && check == true
-        kwargs[:sb_on_member](data)
+    if eventtype == :member
+        if length(hist) == 0 || hist[1].set != set
+            return event
+        end
 
-    elseif haskey(kwargs, :sb_on_notamember) && check == false
-        kwargs[:sb_on_notamember](data)
+        if haskey(kwargs, :on_member) && event == true
+            kwargs[:on_member](hist)
+
+        elseif haskey(kwargs, :on_notamember) && event == false
+            kwargs[:on_notamember](hist)
+        end
+
+        if haskey(hist[1].set._meta, :sb_on_member) && event == true
+            set._meta[:sb_on_member](hist)
+
+        elseif haskey(hist[end].set._meta, :sb_on_notamember) && event == false
+            set._meta[:sb_on_notamember](hist)
+        end
+    else
+        error("Unknown event type: $eventtype.")
     end
 
-    if haskey(set._meta, :sb_on_member) && check == true
-        set._meta[:sb_on_member](data)
+    return event
+end
 
-    elseif haskey(set._meta, :sb_on_notamember) && check == false
-        set._meta[:sb_on_notamember](data)
+function _filter_elem(elems, check, names)
+
+    if !(elems isa Vector)
+        elems = [elems]            
     end
 
-    return check
+    buf = []
+
+    for elem in elems
+        env = Dict{Symbol, Any}()
+
+        if length(names) == 1
+            env[names[1]] = elem
+
+        else
+            for (n, e) in zip(names, elem)
+                env[n] = e
+            end
+        end 
+
+        if check isa Bool
+            if check == true
+                push!(buf, elem)
+            end
+        elseif sb_eval(check, env)
+            push!(buf, elem)
+        end
+    end
+
+    return buf
+end
+
+function _check_member(e, d, h, kwargs)
+    if length(d) == 1
+
+        if haskey(kwargs, :_imhist_)
+            return is_member(d[1][2], e; kwargs...)
+        else
+            return is_member(d[1][2], e; _imhist_=h, kwargs...)
+        end
+    else
+        for (_e, _d) in zip(e, d)
+            if haskey(kwargs, :_imhist_)
+                is_member(_d[2], _e; kwargs...) || return false
+            else
+                (is_member(_d[2], _e; _imhist_=h, kwargs...) ||
+                    return false)
+            end
+        end
+        return true
+    end
+end
+
+function backward_map(set::MappedSet, coelems; hist=[], kwargs...)
+
+    doelems = []
+
+    # setvar names
+    if haskey(set._meta, :_domain_names_)
+        donames = set._meta[:_domain_names]
+    else
+        donames = [n[1] for n in set._domain]
+        set._meta[:_domain_names] = donames
+    end
+
+    if haskey(set._meta, :_codomain_names_)
+        conames = set._meta[:_codomain_names]
+    else
+        conames = [n[1] for n in set._codomain]
+        set._meta[:_codomain_names] = conames
+    end
+
+    for coelem in coelems
+
+        # check coelem in codomain
+        _check_member(coelem, set._codomain, hist, kwargs) || continue
+
+        # filter doelems
+        filtered_coelem = _filter_elem(coelem, set._forward_map[2], conames)
+
+        if length(filtered_coelem) == 0
+            push!(hist, (set = set, elem = coelem))
+            _event(set, :member, false, hist, kwargs)
+            continue
+        end
+        
+        # generate backward func
+        bfunc = sb_eval(set._backward_map[1], set._env)
+
+        # generate doelem from coelem using the backward func
+        try
+            if length(conames) > 1
+                gen_doelems = Base.invokelatest(bfunc, filtered_coelem[1]...)
+            else
+                gen_doelems = Base.invokelatest(bfunc, filtered_coelem[1])
+            end
+
+            # filter doelems
+            for e in _filter_elem(gen_doelems, set._backward_map[2], donames)
+                _check_member(e, set._domain, hist, kwargs) || continue
+                push!(doelems, e)
+            end
+        catch err
+            error("Invoking set expression, $(set._backward_map[1]), " *
+                  "is failed: $err")
+        end
+    end
+
+    return doelems
+end
+
+function forward_map(set::MappedSet, doelems; hist=[], kwargs...)
+
+    coelems = []
+
+    # setvar names
+    if haskey(set._meta, :_domain_names_)
+        donames = set._meta[:_domain_names]
+    else
+        donames = [n[1] for n in set._domain]
+        set._meta[:_domain_names] = donames
+    end
+
+    if haskey(set._meta, :_codomain_names_)
+        conames = set._meta[:_codomain_names]
+    else
+        conames = [n[1] for n in set._codomain]
+        set._meta[:_codomain_names] = conames
+    end
+
+    for doelem in doelems
+
+        # first, check doelem in domain
+        _check_member(doelem, set._domain, hist, kwargs) || continue
+
+        filtered_doelem = _filter_elem(doelem, set._backward_map[2], donames)
+
+        if length(filtered_doelem) == 0
+            push!(hist, (set = set, elem = doelem))
+            _event(set, :member, false, hist, kwargs)
+            continue
+        end
+
+        # generate forward func
+        ffunc = sb_eval(set._forward_map[1], set._env)
+
+        # generate coelem2 from the generated doelem using forward func
+        try
+            # generate codomain elems
+            if length(donames) > 1
+                gen_coelems = Base.invokelatest(ffunc, filtered_doelem[1]...)
+            else
+                gen_coelems = Base.invokelatest(ffunc, filtered_doelem[1])
+            end
+
+            # filter codomain elems
+            for e in _filter_elem(gen_coelems, set._forward_map[2], conames)
+                _check_member(e, set._codomain, hist, kwargs) || continue
+                push!(coelems, e)
+            end
+        catch err
+            error("Invoking set expression, $(set._forward_map[1]), " *
+                  "is failed: $err")
+        end
+    end
+
+    return coelems
 end
 
 function is_member(set::PartiallyEnumerableSet, elem; kwargs...)
+
+    hist = get(kwargs, :_imhist_, [])
+    push!(hist, (set = set, elem = elem))
 
     type_elem = typeof(elem)
 
     # NOTE: having SBSet as an element is not supported yet
     #       due to lack of the is_equal function of SBSets
     if haskey(set._elems, type_elem)
-        return _event(set, elem in set._elems[type_elem], elem, kwargs)
+        return _event(set, :member, elem in set._elems[type_elem], hist, kwargs)
+    else
+        return _event(set, :member, false, hist, kwargs)
     end
 
-    return _event(set, false, elem, kwargs)
 end
 
 function is_member(set::PredicateSet, elem; kwargs...) :: Bool
 
+    hist = get(kwargs, :_imhist_, [])
+    push!(hist, (set = set, elem = elem))
+
     if length(set._vars) == 1
-        elem in  set._vars[1][2] || return _event(set, false, elem, kwargs)
+
+        if haskey(kwargs, :_imhist_)
+            res = is_member(set._vars[1][2], elem; kwargs...)
+        else
+            res = is_member(set._vars[1][2], elem; _imhist_=hist, kwargs...)
+        end
+
+        res == false && return _event(set, :member, res, hist, kwargs)
 
         if set._pred isa Bool
-            return _event(set, set._pred, elem, kwargs)
+            push!(hist, (set = set, elem = elem))
+            return _event(set, :member, set._pred, hist, kwargs)
 
         else
             varmap = Dict{Symbol, Any}(set._vars[1][1] => elem)
-            return _event(set, sb_eval(set._pred, merge(varmap, set._env)),
-                          elem, kwargs)
+            push!(hist, (set = set, elem = elem))
+            return _event(set, :member, sb_eval(set._pred,
+                                merge(varmap, set._env)), hist, kwargs)
         end
 
     else
-        length(set._vars) == length(elem) || return _event(set,
-                                                        false, elem, kwargs)
+        if length(set._vars) != length(elem)
+            push!(hist, (set = set, elem = elem))
+            return _event(set, :member, false, hist, kwargs)
+        end
 
         varmap = Dict{Symbol, Any}()
 
         for ((v, s), e) in zip(set._vars, elem)
-            e in s || return _event(set, false, e, kwargs)
 
+            if haskey(kwargs, :_imhist_)
+                res = is_member(s, e; kwargs...)
+            else
+                res = is_member(s, e; _imhist_=hist, kwargs...)
+            end
+
+            res == false && return _event(set, :member, res, hist, kwargs)
+            
             if v isa Symbol
                 varmap[v] = e
             end
         end
 
+        push!(hist, (set = set, elem = elem))
+
         if set._pred isa Bool
-            return _event(set, set._pred, elem, kwargs)
+            return _event(set, :member, set._pred, hist, kwargs)
 
         else
-            return _event(set, sb_eval(set._pred, merge(varmap, set._env)),
-                                        elem, kwargs)
+            return _event(set, :member, sb_eval(set._pred,
+                            merge(varmap, set._env)), hist, kwargs)
         end
     end 
 
-    return _event(set, false, elem, kwargs)
+    push!(hist, (set = set, elem = elem))
+    return _event(set, :member, false, hist, kwargs)
 end
 
 function is_member(set::MappedSet, coelem; kwargs...)
 
-    function _filter_elems(elems, check, names)
+    hist = get(kwargs, :_imhist_, [])
+    push!(hist, (set = set, elem = coelem))
 
-        if !(elems isa Vector)
-            elems = [elems]            
-        end
+    doelems = backward_map(set, [coelem]; hist=hist, kwargs...)
 
-        buf = []
-
-        for elem in elems
-            env = Dict{Symbol, Any}()
-
-            if length(names) == 1
-                env[names[1]] = elem
-
-            else
-                for (n, e) in zip(names, elem)
-                    env[n] = e
-                end
-            end 
-
-            if check isa Bool
-                if check == true
-                    push!(buf, elem)
-                end
-            elseif sb_eval(check, env)
-                push!(buf, elem)
-            end
-        end
-
-        return buf
+    if length(doelems) == 0
+        return _event(set, :member, false, hist, kwargs)
     end
 
-    function _check_member(e, d)
-        if length(d) == 1
-            return e in d[1][2]
-        else
-            for (_e, _d) in zip(e, d)
-                _e in _d[2] || return false
-            end
-            return true
-        end
-    end
-
-    # check coelem in codomain
-    _check_member(coelem, set._codomain) || return _event(set, false, coelem,
-                                                            kwargs)
-
-    # codomain setvar names
-    conames = [n[1] for n in set._codomain]
-
-    # filter doelems
-    coelems = _filter_elems(coelem, set._forward_map[2], conames)
-    length(coelems) == 0 && return _event(set, false, coelem, kwargs)
-    
-    # generate backward func
-    bfunc = sb_eval(set._backward_map[1], set._env)
-
-    # generate doelem from coelem using the generated backward func
-    _doelems = nothing
-    try
-        _doelems = Base.invokelatest(bfunc, coelems...)
-    catch err
-        error("Invoking set expression, $(set._backward_map[1]), " *
-              "is failed: $err")
-    end
-
-    # domain setvar names
-    donames = [n[1] for n in set._domain]
-
-    # filter doelems
-    doelems = _filter_elems(_doelems, set._backward_map[2], donames)
-
-    # check doelems in domain
+    # per every generated elem in domain
     for doelem in doelems
 
-        # first, check doelem in domain
-        _check_member(doelem, set._domain) || continue
+        # generate elem in co-domain
+        coelems2 = forward_map(set, [doelem]; hist=hist, kwargs...)
 
-        # generate forward func
-        ffunc = sb_eval(set._forward_map[1], set._env)
-
-        # generate coelem2 from the generated doelem using the generated
-        # forward func
-        _coelems2 = nothing
-        try
-            _coelems2 = Base.invokelatest(ffunc, doelem...)
-        catch err
-            error("Invoking set expression, $(set._forward_map[1]), " *
-                  "is failed: $err")
-        end
-
-        # filter coelem2
-        coelems2 = _filter_elems(_coelems2, set._forward_map[2], conames)
-
+        # check if generate elem in co-domain equals to
+        # the original elem in codomain
         for coelem2 in coelems2
-            # check coelem == coelem2
-            coelem == coelem2 && return _event(set, true, coelem, kwargs)
+            if coelem == coelem2
+                push!(hist, (set = set, elem = coelem))
+                return _event(set, :member, true, hist, kwargs)
+            end
         end
     end
 
-    return _event(set, false, coelem, kwargs)
+    push!(hist, (set = set, elem = coelem))
+    return _event(set, :member, false, hist, kwargs)
 end
 
 function is_member(set::CompositeSet, elem; kwargs...)
 
-    length(set._sets) == 0 && return false
+    hist = get(kwargs, :_imhist_, [])
+    push!(hist, (set = set, elem = elem))
+
+    length(set._sets) == 0 && return _event(set, :member, false, hist, kwargs)
+
+    res = false
 
     if set._op == :union
-        return _event(set, any(s -> elem in s, set._sets), elem, kwargs)
+        if haskey(kwargs, :_imhist_)
+            res = any(s -> is_member(s, elem; kwargs...), set._sets)
+        else
+            res = any(s -> is_member(s, elem; _imhist_=hist,
+                        kwargs...), set._sets)
+        end
+
+        res == false && push!(hist, (set = set, elem = elem))
 
     elseif set._op == :intersect
-        return _event(set, all(s -> elem in s, set._sets), elem, kwargs)
+        if haskey(kwargs, :_imhist_)
+            _res = any(s -> !is_member(s, elem; kwargs...), set._sets)
+        else
+            _res = any(s -> !is_member(s, elem; _imhist_=hist,
+                        kwargs...), set._sets)
+        end
+        res = !_res
+
+        res == true && push!(hist, (set = set, elem = elem))
 
     elseif set._op == :setdiff
 
-        return _event(set, elem in set._sets[1] && all(s -> !(elem in s),
-                                                        set._sets[2:end]),
-                                                        elem, kwargs)
+        if haskey(kwargs, :_imhist_)
+            _res = (!is_member(set._sets[1], elem; kwargs...) ||
+                any(s -> is_member(s, elem; kwargs...), set._sets[2:end]))
+        else
+            _res = (!is_member(set._sets[1], elem; _imhist_=hist, kwargs...) ||
+                    any(s -> is_member(s, elem; _imhist_=hist,
+                                        kwargs...), set._sets[2:end]))
+        end
+
+        res = !_res
+        push!(hist, (set = set, elem = elem))
 
     elseif set._op == :symdiff
 
@@ -202,18 +364,44 @@ function is_member(set::CompositeSet, elem; kwargs...)
             work_set = union((work_set - s), (s - work_set))
         end
 
-        return _event(set, elem in work_set, elem, kwargs)
+        if haskey(kwargs, :_imhist_)
+            res = is_member(work_set, elem; kwargs...)
+        else
+            res = is_member(work_set, elem; _imhist_=hist, kwargs...)
+        end
+
+        push!(hist, (set = set, elem = elem))
+
+    else
+        println("WARN: set operation, $(set._op), is not implemented yet.")
     end
 
-    println("WARN: set operation, $(set._op), is not implemented yet.")
+    return _event(set, :member, res, hist, kwargs)
 
-    return _event(set, false, elem, kwargs)
 end
 
 function is_member(set::TypeSet, elem; kwargs...)
 
-    return _event(set, elem isa find_param(set), elem, kwargs)
-    
+    hist = get(kwargs, :_imhist_, [])
+    push!(hist, (set = set, elem = elem))
+
+    return _event(set, :member, elem isa find_param(set), hist, kwargs)
+end
+
+function is_member(set::UniversalSet, elem; kwargs...)
+
+    hist = get(kwargs, :_imhist_, [])
+    push!(hist, (set = set, elem = elem))
+
+    return _event(set, :member, true, hist, kwargs)
+end
+
+function is_member(set::EmptySet, elem; kwargs...)
+
+    hist = get(kwargs, :_imhist_, [])
+    push!(hist, (set = set, elem = elem))
+
+    return _event(set, :member, false, hist, kwargs)
 end
 
 Base.:in(e, set::SBSet)         = is_member(set, e)

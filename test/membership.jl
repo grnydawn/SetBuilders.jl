@@ -1,5 +1,7 @@
 # Set membership tests
 
+# sets are pre-defined in "creations.jl"
+
 ## Empty set
 #E = @setbuild()
 @test !(1 in E)

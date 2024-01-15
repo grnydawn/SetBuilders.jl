@@ -1,5 +1,6 @@
 # Set operation tests
 
+# pre-defined sets for testing
 #E = @setbuild()
 #U = @setbuild(Any)
 
@@ -11,40 +12,40 @@
 @test ~U == E
 @test ~E == U
 
-A = @setbuild(x in I, 0 <= x < 10)
-B = @setbuild(x in I, 5 <= x < 15)
-X = @setbuild(Union{Int64, Int32}[Int32(-1), Int32(1), 2])
+X = @setbuild(x in I, 0 <= x < 10)
+Y = @setbuild(x in I, 5 <= x < 15)
+Z = @setbuild(Union{Int64, Int32}[Int32(-1), Int32(1), 2])
 
-@test all(x -> x in A, 0:9)
-@test all(x -> x ∈ A, 0:9)
-@test all(x -> !(x in A), (-1, 10))
+@test all(x -> x in X, 0:9)
+@test all(x -> x ∈ X, 0:9)
+@test all(x -> !(x in X), (-1, 10))
 
-@test all(x -> x in union(A, B, sb_on_error=1), 0:14)
-@test all(x -> x in A ∪ B, 0:14)
-@test all(x -> !(x in union(A, B)), (-1, 15))
-@test all(x -> x in union(A, U), -1:15)
-@test all(x -> x in A ∪ ~E, -1:15)
-@test all(x -> x in union(A, E), 0:9)
+@test all(x -> x in union(X, Y, sb_on_error=1), 0:14)
+@test all(x -> x in X ∪ Y, 0:14)
+@test all(x -> !(x in union(X, Y)), (-1, 15))
+@test all(x -> x in union(X, U), -1:15)
+@test all(x -> x in X ∪ ~E, -1:15)
+@test all(x -> x in union(X, E), 0:9)
 
-@test all(x -> x in intersect(A, B), 5:9)
-@test all(x -> x ∈ A ∩ B, 5:9)
-@test all(x -> !(x in intersect(A, B)), 0:4)
-@test all(x -> x in intersect(A, U), 0:9)
-@test all(x -> !(x in intersect(A, E)), -1:15)
+@test all(x -> x in intersect(X, Y), 5:9)
+@test all(x -> x ∈ X ∩ Y, 5:9)
+@test all(x -> !(x in intersect(X, Y)), 0:4)
+@test all(x -> x in intersect(X, U), 0:9)
+@test all(x -> !(x in intersect(X, E)), -1:15)
 
-@test all(x -> x in setdiff(A, B), 0:4)
-@test all(x -> x in A - B, 0:4)
-@test all(x -> !(x in setdiff(A, B)), 5:9)
-@test all(x -> !(x in setdiff(A, U)), -1:15)
-@test all(x -> x in setdiff(U, A), 10:14)
-@test all(x -> x in ~E - A, 10:14)
-@test all(x -> x in setdiff(A, E), 0:9)
-@test all(x -> !(x in setdiff(E, A)), -1:15)
+@test all(x -> x in setdiff(X, Y), 0:4)
+@test all(x -> x in X - Y, 0:4)
+@test all(x -> !(x in setdiff(X, Y)), 5:9)
+@test all(x -> !(x in setdiff(X, U)), -1:15)
+@test all(x -> x in setdiff(U, X), 10:14)
+@test all(x -> x in ~E - X, 10:14)
+@test all(x -> x in setdiff(X, E), 0:9)
+@test all(x -> !(x in setdiff(E, X)), -1:15)
 
-@test all(x -> x in symdiff(A, B), [0:4; 10:14])
-@test all(x -> !(x in symdiff(A, B)), 5:9)
-@test all(x -> !(x in symdiff(A, U)), 0:9)
-@test all(x -> x in symdiff(A, E), 0:9)
+@test all(x -> x in symdiff(X, Y), [0:4; 10:14])
+@test all(x -> !(x in symdiff(X, Y)), 5:9)
+@test all(x -> !(x in symdiff(X, U)), 0:9)
+@test all(x -> x in symdiff(X, E), 0:9)
 
-@test all(x -> x in A ∪ X, [Int32(i) for i in -1:9])
-@test all(x -> !(x in A ∩ X), [0, 1])
+@test all(x -> x in X ∪ Z, [Int32(i) for i in -1:9])
+@test all(x -> !(x in X ∩ Z), [0, 1])

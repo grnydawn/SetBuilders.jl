@@ -1,4 +1,4 @@
-# imports.jl : SetBuilder Set Imports
+# setpkg.jl : SetBuilder Package Manager
 
 function collect_expects(_mod::Expr) :: Tuple{Vector, Vector}
 
@@ -48,7 +48,7 @@ function collect_expects(_mod::Expr) :: Tuple{Vector, Vector}
     return expects, options
 end
 
-function import_sets(target::AbstractString, env::Dict{Symbol, Any},
+function load_pkg(target::AbstractString, env::Dict{Symbol, Any},
                         meta::Dict{Symbol, Any}) :: Nothing
 
     modstr = nothing

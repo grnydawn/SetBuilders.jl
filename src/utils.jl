@@ -1,10 +1,22 @@
 # utils.jl
 
+function TAB(width; mark="") :: String
+    return repeat(" ", max(0, 4 * width - length(mark))) * mark
+end
+
+function SETNAME(x)
+
+    Q = div(x-1,26)
+    R = (x-1)%26
+
+    return Q == 0 ? "$('A'+x-1)" : ('A'+Q-1)*('A'+R)
+end
+
 setops_syms = Dict{Symbol, AbstractString}(
                     :union      => "∪",
                     :intersect  => "∩",
                     :setdiff    => "-",
-                    :symdiff    => "<>"
+                    :symdiff    => "∆"
                 )
 
 find_param(vect::Vector{T}) where T  = T

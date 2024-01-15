@@ -8,7 +8,11 @@ using Test
     include("creations.jl")
     include("membership.jl")
     include("operations.jl")
-    include("imports.jl")
+    include("describe.jl")
+    include("event.jl")
+    include("mapping.jl")
+    include("setpkg.jl")
+
 end
 
 @testset "Performance" begin

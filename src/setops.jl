@@ -26,7 +26,7 @@ function do_pop!(set::PartiallyEnumerableSet, elem)
     end
 end
 
-function do_setop(setop::Symbol, sets::NTuple{N, SBSet} where N, kwargs) :: SBSet
+function do_setop(setop::Symbol, sets::NTuple{N, SBSet} where N; kwargs...) :: SBSet
 
     if length(sets) == 0
         error("No set is provided for the set opration, $setop.")
@@ -95,12 +95,12 @@ Base.push!(set::PartiallyEnumerableSet, elem)  = do_push!(set, elem)
 Base.pop!(set::PartiallyEnumerableSet, elem)   = do_pop!(set, elem)
 
 
-Base.union(sets::SBSet...; kwargs...)       = do_setop(:union, sets, kwargs)
-Base.intersect(sets::SBSet...; kwargs...)   = do_setop(:intersect, sets, kwargs)
-Base.setdiff(sets::SBSet...; kwargs...)     = do_setop(:setdiff, sets, kwargs) 
-Base.symdiff(sets::SBSet...; kwargs...)     = do_setop(:symdiff, sets, kwargs) 
-Base.:-(sets::SBSet...)                     = do_setop(:setdiff, sets, ()) 
+Base.union(sets::SBSet...; kwargs...)       = do_setop(:union, sets; kwargs...)
+Base.intersect(sets::SBSet...; kwargs...)   = do_setop(:intersect, sets; kwargs...)
+Base.setdiff(sets::SBSet...; kwargs...)     = do_setop(:setdiff, sets; kwargs...) 
+Base.symdiff(sets::SBSet...; kwargs...)     = do_setop(:symdiff, sets; kwargs...) 
+Base.:-(sets::SBSet...)                     = do_setop(:setdiff, sets) 
 Base.:~(set::SBSet)                         = do_setop(:setdiff,
-                                                       (UniversalSet(), set), ())
+                                                       (UniversalSet(), set))
 complement(set::SBSet; kwargs...)           = do_setop(:setdiff,
-                                                       (UniversalSet(), set), kwargs)
+                                                       (UniversalSet(), set); kwargs...)
