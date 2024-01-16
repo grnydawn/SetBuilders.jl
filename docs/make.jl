@@ -9,6 +9,8 @@ makedocs(;
     modules=[SetBuilders],
     authors="Youngsung Kim <youngsung.kim.act2@gmail.com>",
     repo=Remotes.GitHub("grnydawn", "SetBuilders.jl"),
+    source  = "src",
+    build   = "build",
     sitename="SetBuilders",
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", "false") == "true",
