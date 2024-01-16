@@ -5,14 +5,16 @@ Julia Package for Predicate and Partially Enumerable Sets
 
 ## Introduction
 
-Most of programming languages including Julia support a certain type of
-enumerable sets, but not the type of predicate sets in mathematical sense.
-For example, in Julia, we can create a set having integer values like
+SetBuilders provides Julia users with the power of predicate-based sets.
+
+Many programming languages, including Julia, support a type of enumerable
+sets but not predicate sets in the mathematical sense. For instance,
+in Julia, it's possible to create a set containing integer values, such as
 
 ```julia
 A = Set([1,2,3])
 ```
-However, we cannot create something like this:
+However, creating the following is not possible:
 
 ```julia
 A = Set(x ∈ Integer | 0 < x < 4)

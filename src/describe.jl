@@ -70,7 +70,7 @@ function describe(set::TypeSet{T}; prepend="", prefix="", depth=0,
     end
 end
 
-function describe(set::PartiallyEnumerableSet; prepend="", prefix="", depth=0,
+function describe(set::EnumerableSet; prepend="", prefix="", depth=0,
                     limit=-1, mark=nothing, collect=nothing) :: String
 
     if collect isa Tuple && length(collect) == 2

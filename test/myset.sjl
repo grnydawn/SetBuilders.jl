@@ -1,0 +1,8 @@
+module MySetModule
+
+export MYSET
+
+I = @setbuild(Integer)
+MYSET = @setbuild(x in I, x > 0)
+
+end

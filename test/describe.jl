@@ -29,7 +29,7 @@
 #G = @setbuild(Union{Integer, Float64})
 @test describe(G) == "{ x ∈ ::Union{Float64, Integer} }"
 
-## Partially enumerable sets
+## Enumerable sets
 #ENUM1 = @setbuild([1, 2, 3])
 @test describe(ENUM1) == "{ x ∈ ::Int64 }"
 

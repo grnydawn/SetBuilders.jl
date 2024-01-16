@@ -1,29 +1,53 @@
 # setops.jl : SetBuilder Set Operations
 
-function do_push!(set::PartiallyEnumerableSet, elem)
+# TODO: support util functions for EnumerableSet
 
-    type_elem = typeof(elem)
+function do_push!(set::EnumerableSet, elems...)
 
-    if haskey(set._elems, type_elem)
-        push!(set._elems[type_elem], elem)
+    for elem in elems
+        type_elem = typeof(elem)
 
-    else
-        error("push! failed due to element type mismatch: " *
-                "$type_elem not in $(keys(set._elems)).")
+        if haskey(set._elems, type_elem)
+            push!(set._elems[type_elem], elem)
+
+        else
+            error("push! failed due to element type mismatch: " *
+                    "$type_elem not in $(keys(set._elems)).")
+        end
     end
+
+    return set
 end
 
-function do_pop!(set::PartiallyEnumerableSet, elem)
+function do_pop!(set::EnumerableSet, elems...)
 
-    type_elem = typeof(elem)
+    item = nothing
 
-    if haskey(set._elems, type_elem)
-        pop!(set._elems[type_elem], elem)
+    if length(elems) == 0
+        buf = []
+        for s in values(set._elems)
+            length(s) > 0 && push!(buf, s)
+        end
 
+        length(buf) == 0 && throw(ArgumentError("set must be non-empty"))
+
+        item = pop!(rand(buf))
+ 
     else
-        error("pop! failed due to element type mismatch: " *
-                "$type_elem not in $(keys(set._elems)).")
+        for elem in elems
+            type_elem = typeof(elem)
+
+            if haskey(set._elems, type_elem)
+                item = pop!(set._elems[type_elem], elem)
+
+            else
+                error("pop! failed due to element type mismatch: " *
+                        "$type_elem not in $(keys(set._elems)).")
+            end
+        end
     end
+
+    return item
 end
 
 function do_setop(setop::Symbol, sets::NTuple{N, SBSet} where N; kwargs...) :: SBSet
@@ -91,9 +115,67 @@ function do_setop(setop::Symbol, sets::NTuple{N, SBSet} where N; kwargs...) :: S
     end
 end
 
-Base.push!(set::PartiallyEnumerableSet, elem)  = do_push!(set, elem)
-Base.pop!(set::PartiallyEnumerableSet, elem)   = do_pop!(set, elem)
+"""
+    push!(set::EnumerableSet, elems...)
 
+  Insert one or more items in Enumerable set.
+
+# Examples
+```julia-repl
+julia> A = @setbuild(Union{Int64, Float64}[1])
+EnumerableSet([{Float64}*0, {Int64}*1])
+
+julia> is_member(A, 1)
+true
+
+julia> is_member(A, Int32(1))
+false
+
+julia> push!(A, Float64(2.0))
+EnumerableSet([{Float64}*1, {Int64}*1])
+
+julia> is_member(A, Float64(2.0))
+true
+
+julia> pop!(A, Float64(2.0))
+2.0
+
+julia> is_member(A, Float64(2.0))
+false
+```
+"""
+Base.push!(set::EnumerableSet, elems...)    = do_push!(set, elems...)
+
+"""
+    push!(set::EnumerableSet, elems...)
+
+  Insert one or more items in Enumerable set.
+
+# Examples
+```julia-repl
+julia> A = @setbuild(Union{Int64, Float64}[1])
+EnumerableSet([{Float64}*0, {Int64}*1])
+
+julia> is_member(A, 1)
+true
+
+julia> is_member(A, Int32(1))
+false
+
+julia> push!(A, Float64(2.0))
+EnumerableSet([{Float64}*1, {Int64}*1])
+
+julia> is_member(A, Float64(2.0))
+true
+
+julia> pop!(A, Float64(2.0))
+2.0
+
+julia> is_member(A, Float64(2.0))
+false
+```
+"""
+Base.pop!(set::EnumerableSet, elems...)     = do_pop!(set, elems...)
 
 Base.union(sets::SBSet...; kwargs...)       = do_setop(:union, sets; kwargs...)
 Base.intersect(sets::SBSet...; kwargs...)   = do_setop(:intersect, sets; kwargs...)

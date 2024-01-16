@@ -38,7 +38,7 @@ S = @setbuild(MyStruct)
 
 G = @setbuild(Union{Integer, Float64})
 
-# Partially enumeratablesets
+# Enumerable set
 ENUM1 = @setbuild([1, 2, 3])
 
 ENUM2 = @setbuild(Int64[value, 2])

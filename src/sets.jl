@@ -2,23 +2,80 @@
 #
 
 # Top-level type of all sets
+
+"""
+    SBSet - Type
+
+The `SBSet` type is the supertype of all SetBuilders set types.
+
+# Examples
+```julia-repl
+julia> I = @setbuild(Integer)
+TypeSet(Integer)
+
+julia> I isa SBSet
+true
+```
+"""
 abstract type SBSet end
 
-# Empty set
+"""
+    EmptySet - Type
+
+The `EmptySet` type is a singleton type that implements a set containing
+no member.
+
+# Examples
+```julia-repl
+julia> E = @setbuild()
+EmptySet()
+
+julia> 1 in E
+false
+```
+"""
 struct EmptySet <: SBSet end
 
 function Base.show(io::IO, s::EmptySet)
     print(io, "EmptySet()")
 end
 
-# Universal set
+
+"""
+    UniversalSet - Type
+
+The `UniversalSet` type is a singleton type that implements a set containing
+all object.
+
+# Examples
+```julia-repl
+julia> U = @setbuild(Any)
+UniversalSet()
+
+julia> 1 in U
+true
+```
+"""
 struct UniversalSet <: SBSet end
 
 function Base.show(io::IO, s::UniversalSet)
     print(io, "UniversalSet()")
 end
 
-# Set for Julia types
+"""
+    TypeSet - Type
+
+The `TypeSet` type implements a set containing members of Julia data types.
+
+# Examples
+```julia-repl
+julia> I = @setbuild(Integer)
+TypeSet(Integer)
+
+julia> 1 in I
+true
+```
+"""
 struct TypeSet{T} <: SBSet where T
     _meta::Dict{Symbol, Any}
 end
@@ -29,18 +86,77 @@ function Base.show(io::IO, s::TypeSet{T}) where T
     print(io, "TypeSet($T)")
 end
 
-# PartiallyPartiallyEnumerableerated set
-struct PartiallyEnumerableSet <: SBSet
+"""
+    EnumerableSet - Type
+
+The `EnumerableSet` type implements a set containing enumerable members of
+Julia data types.
+
+The `EnumerableSet` type is similar to the standard Julia `Set` type in that
+programmers can `push!` members into and `pop!` members from a set.
+
+However, the `EnumerableSet` type strictly distinguishes the type of its
+members. For example, with `A = @setbuild(Int64[])`, A can contain any `Int64`
+values, but not `Int32` or objects of other types.
+
+# Examples
+```julia-repl
+julia> A = @setbuild(Union{Int64, Float64}[1])
+EnumerableSet([{Float64}*0, {Int64}*1])
+
+julia> is_member(A, 1)
+true
+
+julia> is_member(A, Int32(1))
+false
+
+julia> push!(A, Float64(2.0))
+EnumerableSet([{Float64}*1, {Int64}*1])
+
+julia> is_member(A, Float64(2.0))
+true
+
+julia> pop!(A, Float64(2.0))
+2.0
+
+julia> is_member(A, Float64(2.0))
+false
+```
+"""
+struct EnumerableSet <: SBSet
     _elems::Dict{DataType, Set{Any}}
     _meta::Dict{Symbol, Any}
 end
 
-function Base.show(io::IO, s::PartiallyEnumerableSet)
+function Base.show(io::IO, s::EnumerableSet)
     dtypes = ["{$k}*$(length(v))" for (k,v) in s._elems]
-    print(io, """PartiallyEnumerableSet([$(join(dtypes, ", "))])""")
+    print(io, """EnumerableSet([$(join(dtypes, ", "))])""")
 end
 
-# Set mapped to itself with filtering
+"""
+    PredicateSet - Type
+
+The `PredicateSet` type implements a set whose members are defined by
+Julia Bool expression.
+
+For example, `A = @setbuild(x in @setbuild(Real), 0 < x < 10)` creates
+a set that contains all Julia real numbers bigger than 0 and less than 10.
+
+# Examples
+```julia-repl
+julia> I = @setbuild(Integer)
+TypeSet(Integer)
+
+julia> A = @setbuild(x in I, 0 <= x < 10)
+PredicateSet((x ∈ TypeSet(Integer)) where 0 <= x < 10)
+
+julia> is_member(A, 0)  # 0 in A 
+true
+
+julia> is_member(A, 10) # 10 in A
+false
+```
+"""
 struct PredicateSet <: SBSet
     _vars::NTuple{N, Tuple{Union{Symbol, Nothing}, SBSet}} where N
     _pred::Union{Bool, Symbol, Expr}
@@ -53,7 +169,47 @@ function Base.show(io::IO, s::PredicateSet)
     print(io, """PredicateSet($(join(vars, ", ")) where $(string(s._pred)))""")
 end
 
-# Set generated from another set
+"""
+    MappedSet - Type
+
+The `MappedSet` type implements a set whose members are converted from 
+another sets.
+
+The conversion is defined by two mappings. First, a forward mapping 
+specifies how members of the originating sets(Domain sets) are mapped 
+to the member of the targeted set(image) within a pre-defined set(Codomain).
+Secondly, a backward mapping specifies how the member in targeted set 
+maps back to the originalting sets. This backward mapping ensures the
+correctness of membership test.
+
+In addition to the mappings, filter Boolean expressions can be used
+after each mappings are applied so that unwanted results from the mappings
+can be eliminated.
+
+# Examples
+```julia-repl
+julia> I = @setbuild(Integer)
+TypeSet(Integer)
+
+julia> struct MyStruct
+       a
+       b
+       end
+
+julia> S = @setbuild(MyStruct)
+TypeSet(MyStruct)
+
+julia> A = @setbuild(s in S, (x in I, y in I) -> mystruct(x,y), s -> (s.a, s.b),
+                     mystruct=MyStruct)
+MappedSet((x ∈ TypeSet(Integer)), (y ∈ TypeSet(Integer)) -> (s ∈ TypeSet(MyStruct)))
+
+julia> is_member(A, MyStruct(1, 1))   # MyStruct(1, 1) in A
+true
+
+julia> is_member(A, MyStruct(1.0, 1)) # MyStruct(1.0, 1) in A
+false
+```
+"""
 struct MappedSet <: SBSet
     _domain::NTuple{N, Tuple{Symbol, SBSet}} where N
     _forward_map::Tuple{Expr, Union{Bool, Expr}}
@@ -70,7 +226,34 @@ function Base.show(io::IO, s::MappedSet)
 end
 
 
-# Set composed with another sets
+"""
+    CompositeSet - Type
+
+The `CompositeSet` type implements a set by applying set operations
+including union, intersection, complement, difference, and symetric 
+difference.
+
+# Examples
+```julia-repl
+julia> I = @setbuild(Integer)
+TypeSet(Integer)
+
+julia> A = @setbuild(x in I, 0 <= x < 10)
+PredicateSet((x ∈ TypeSet(Integer)) where 0 <= x < 10)
+
+julia> B = @setbuild(x in I, 5 <= x < 15)
+PredicateSet((x ∈ TypeSet(Integer)) where 5 <= x < 15)
+
+julia> C = A ∩ B
+CompositeSet(PredicateSet((x ∈ TypeSet(Integer)) where 0 <= x < 10) ∩ PredicateSet((x ∈ TypeSet(Integer)) where 5 <= x < 15))
+
+julia> is_member(C, 5) # 5 in C
+true
+
+julia> is_member(C, 0) # 0 in C
+false
+```
+"""
 struct CompositeSet <: SBSet
     _op::Symbol
     _sets::NTuple{N, SBSet} where N

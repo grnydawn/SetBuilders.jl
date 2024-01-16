@@ -139,7 +139,7 @@ end
 function create_enumset(elems::Expr, meta) ::Expr
 
     if length(elems.args) == 0
-        error("PartiallyEnumerableSet requires to specify Julia type of " *
+        error("EnumerableSet requires to specify Julia type of " *
               "elements: $elems.")
     end
 
@@ -147,11 +147,11 @@ function create_enumset(elems::Expr, meta) ::Expr
         _sb_enum_type = find_param($elems)
         _sb_enum_elems= $(esc(elems))
         if isconcretetype(_sb_enum_type)
-            PartiallyEnumerableSet(Dict(_sb_enum_type =>
+            EnumerableSet(Dict(_sb_enum_type =>
                                         Set{_sb_enum_type}(_sb_enum_elems)),
                                    $meta)
         else
-            error("PartiallyEnumerableSet requires concreate type, but got " *
+            error("EnumerableSet requires concreate type, but got " *
                   string(_sb_enum_type) * ".")
         end
     end
@@ -182,12 +182,12 @@ function create_enumset(type::Union{Symbol, Expr}, elems::Vector{Any}, meta) ::E
             if isconcretetype(_t)
                 push!(_sb_type2set, _t => Set{_t}())
             else
-                error("PartiallyEnumerableSet requires a concreate type, " *
+                error("EnumerableSet requires a concreate type, " *
                       "but got " * string(_t) * ".")
             end
         end
 
-        _sb_enum_set = PartiallyEnumerableSet(Dict(_sb_type2set), $meta)
+        _sb_enum_set = EnumerableSet(Dict(_sb_type2set), $meta)
 
         for e in $elems
             push!(_sb_enum_set, Base.eval(Main, e))
@@ -306,6 +306,54 @@ function split_args(args)
     return args, env, meta
 end
 
+"""
+    @setbuild([args...[; kwargs...]])
+
+The `@setbuild` macro creates various SetBuilders sets.
+
+The `@setbuild` macro in SetBuilders for creating sets
+from Julia data types, predicates, and mappings.
+For example, `I = @setbuild(Integer)` creates a set of
+all Julia Integer type objects, and
+`A = @setbuild(x ∈ I, 0 < x < 4)` creates a set that
+implies to contain the integers 1, 2, and 3.
+
+# Examples
+
+```julia-repl
+julia> E = @setbuild()
+EmptySet()
+
+julia> U = @setbuild(Any)
+UniversalSet()
+
+julia> I = @setbuild(Integer) # Julia Integer-type set
+TypeSet(Integer)
+
+julia> D = @setbuild(Dict{String, Number}) # Julia Dict{String, Number}-type set
+TypeSet(Dict{String, Number})
+
+julia> struct MyStruct
+           a
+           b
+       end
+
+julia> S = @setbuild(MyStruct)  # Julia user-type set
+TypeSet(MyStruct)
+
+julia> N = @setbuild([1, 2, 3]) # Enumerable set
+EnumerableSet([{Int64}*3])
+
+julia> C = @setbuild((I, I))  # Cartesian sets
+PredicateSet((c1 ∈ TypeSet(Integer)), (c2 ∈ TypeSet(Integer)) where true)
+
+julia> P = @setbuild(x in I, 0 <= x < 10) # Predicate sets
+PredicateSet((x ∈ TypeSet(Integer)) where 0 <= x < 10)
+
+julia> M = @setbuild(z in I, (x in P) -> x + 5, z -> z - 5) # Mapped sets
+MappedSet((x ∈ PredicateSet((x ∈ TypeSet(Integer)) where 0 <= x < 10)) -> (z ∈ TypeSet(Integer)))
+```
+"""
 macro setbuild(args...)
 
     args, env, meta = split_args(args)
@@ -360,6 +408,47 @@ function proc_pkg_command(arg, args, env, meta) :: Expr
     end
 end
 
+"""
+    @setpkg command[ command-arguments... ]
+
+The @setpkg macro enables the reuse of sets that were developed separately.
+
+# commands
+
+## load: loads sets from a local file, also known as a setfile
+
+    @setpkg load <path/to/file>
+
+The setfile is a regular Julia module customized for SetBuilders.
+
+# Examples
+Assuming that the file `myset.sjl` contains the following Julia code:
+
+```julia
+module MySetModule
+
+export MYSET
+
+I = @setbuild(Integer)
+MYSET = @setbuild(x in I, x > 0)
+
+end
+```
+
+`MYSET` can be used as shown in the example below:
+
+```julia-repl
+julia> @setpkg load "myset.sjl"
+
+julia> using SetBuilders.MySetModule
+
+julia> 1 in MYSET
+true
+
+julia> 0 in MYSET
+false
+```
+"""
 macro setpkg(args...)
 
     args, env, meta = split_args(args)

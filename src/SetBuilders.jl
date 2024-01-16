@@ -1,3 +1,6 @@
+"""
+Main module for `SetBuilders.jl` -- predicate-based set generation package for Julia.
+"""
 module SetBuilders
 
 export SBSet, @setbuild, @setpkg, complement, is_member

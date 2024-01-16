@@ -7,22 +7,23 @@
 function _event(set, eventtype, event, hist, kwargs)
 
     if eventtype == :member
+
         if length(hist) == 0 || hist[1].set != set
             return event
         end
 
-        if haskey(kwargs, :on_member) && event == true
-            kwargs[:on_member](hist)
+        (haskey(kwargs, :on_member) && event == true &&
+            kwargs[:on_member](hist))
 
-        elseif haskey(kwargs, :on_notamember) && event == false
-            kwargs[:on_notamember](hist)
-        end
+        (haskey(kwargs, :on_notamember) && event == false &&
+            kwargs[:on_notamember](hist))
 
-        if haskey(hist[1].set._meta, :sb_on_member) && event == true
-            set._meta[:sb_on_member](hist)
+        if hasproperty(hist[1].set, :_meta)
+            (haskey(hist[1].set._meta, :sb_on_member) && event == true &&
+                set._meta[:sb_on_member](hist))
 
-        elseif haskey(hist[end].set._meta, :sb_on_notamember) && event == false
-            set._meta[:sb_on_notamember](hist)
+            (haskey(hist[end].set._meta, :sb_on_notamember) && event == false &&
+                set._meta[:sb_on_notamember](hist))
         end
     else
         error("Unknown event type: $eventtype.")
@@ -200,7 +201,36 @@ function forward_map(set::MappedSet, doelems; hist=[], kwargs...)
     return coelems
 end
 
-function is_member(set::PartiallyEnumerableSet, elem; kwargs...)
+"""
+    is_member(set::EnumerableSet, elem; kwargs...)
+
+Check if `elem` is a member of `set`
+
+# Examples
+```julia-repl
+julia> A = @setbuild(Union{Int64, Float64}[1])
+EnumerableSet([{Float64}*0, {Int64}*1])
+
+julia> is_member(A, 1)
+true
+
+julia> is_member(A, Int32(1))
+false
+
+julia> push!(A, Float64(2.0))
+EnumerableSet([{Float64}*1, {Int64}*1])
+
+julia> is_member(A, Float64(2.0))
+true
+
+julia> pop!(A, Float64(2.0))
+2.0
+
+julia> is_member(A, Float64(2.0))
+false
+```
+"""
+function is_member(set::EnumerableSet, elem; kwargs...)
 
     hist = get(kwargs, :_imhist_, [])
     push!(hist, (set = set, elem = elem))
@@ -217,6 +247,26 @@ function is_member(set::PartiallyEnumerableSet, elem; kwargs...)
 
 end
 
+"""
+    is_member(set::PredicateSet, elem; kwargs...)
+
+Check if `elem` is a member of `set`
+
+# Examples
+```julia-repl
+julia> I = @setbuild(Integer)
+TypeSet(Integer)
+
+julia> A = @setbuild(x in I, 0 <= x < 10)
+PredicateSet((x ∈ TypeSet(Integer)) where 0 <= x < 10)
+
+julia> is_member(A, 0)  # 0 in A 
+true
+
+julia> is_member(A, 10) # 10 in A
+false
+```
+"""
 function is_member(set::PredicateSet, elem; kwargs...) :: Bool
 
     hist = get(kwargs, :_imhist_, [])
@@ -281,6 +331,35 @@ function is_member(set::PredicateSet, elem; kwargs...) :: Bool
     return _event(set, :member, false, hist, kwargs)
 end
 
+"""
+    is_member(set::MappedSet, elem; kwargs...)
+
+Check if `elem` is a member of `set`
+
+# Examples
+```julia-repl
+julia> I = @setbuild(Integer)
+TypeSet(Integer)
+
+julia> struct MyStruct
+       a
+       b
+       end
+
+julia> S = @setbuild(MyStruct)
+TypeSet(MyStruct)
+
+julia> A = @setbuild(s in S, (x in I, y in I) -> mystruct(x,y), s -> (s.a, s.b),
+                     mystruct=MyStruct)
+MappedSet((x ∈ TypeSet(Integer)), (y ∈ TypeSet(Integer)) -> (s ∈ TypeSet(MyStruct)))
+
+julia> is_member(A, MyStruct(1, 1))   # MyStruct(1, 1) in A
+true
+
+julia> is_member(A, MyStruct(1.0, 1)) # MyStruct(1.0, 1) in A
+false
+```
+"""
 function is_member(set::MappedSet, coelem; kwargs...)
 
     hist = get(kwargs, :_imhist_, [])
@@ -312,6 +391,32 @@ function is_member(set::MappedSet, coelem; kwargs...)
     return _event(set, :member, false, hist, kwargs)
 end
 
+"""
+    is_member(set::CompositeSet, elem; kwargs...)
+
+Check if `elem` is a member of `set`
+
+# Examples
+```julia-repl
+julia> I = @setbuild(Integer)
+TypeSet(Integer)
+
+julia> A = @setbuild(x in I, 0 <= x < 10)
+PredicateSet((x ∈ TypeSet(Integer)) where 0 <= x < 10)
+
+julia> B = @setbuild(x in I, 5 <= x < 15)
+PredicateSet((x ∈ TypeSet(Integer)) where 5 <= x < 15)
+
+julia> C = A ∩ B
+CompositeSet(PredicateSet((x ∈ TypeSet(Integer)) where 0 <= x < 10) ∩ PredicateSet((x ∈ TypeSet(Integer)) where 5 <= x < 15))
+
+julia> is_member(C, 5) # 5 in C
+true
+
+julia> is_member(C, 0) # 0 in C
+false
+```
+"""
 function is_member(set::CompositeSet, elem; kwargs...)
 
     hist = get(kwargs, :_imhist_, [])
@@ -380,6 +485,23 @@ function is_member(set::CompositeSet, elem; kwargs...)
 
 end
 
+"""
+    is_member(set::TypeSet, elem; kwargs...)
+
+Check if `elem` is a member of `set`
+
+# Examples
+```julia-repl
+julia> I = @setbuild(Integer)
+TypeSet(Integer)
+
+julia> is_member(I, 1)   # 1 in I
+true
+
+julia> is_member(I, 0.1) # 0.1 in I
+false
+```
+"""
 function is_member(set::TypeSet, elem; kwargs...)
 
     hist = get(kwargs, :_imhist_, [])
@@ -388,6 +510,23 @@ function is_member(set::TypeSet, elem; kwargs...)
     return _event(set, :member, elem isa find_param(set), hist, kwargs)
 end
 
+"""
+    is_member(set::UniversalSet, elem; kwargs...)
+
+Check if `elem` is a member of `set`
+
+# Examples
+```julia-repl
+julia> U = @setbuild(Any)
+UniversalSet()
+
+julia> is_member(U, 1)   # 1 in U
+true
+
+julia> is_member(U, 0.1) # 0.1 in U
+true
+```
+"""
 function is_member(set::UniversalSet, elem; kwargs...)
 
     hist = get(kwargs, :_imhist_, [])
@@ -396,6 +535,23 @@ function is_member(set::UniversalSet, elem; kwargs...)
     return _event(set, :member, true, hist, kwargs)
 end
 
+"""
+    is_member(set::EmptySet, elem; kwargs...)
+
+Check if `elem` is a member of `set`
+
+# Examples
+```julia-repl
+julia> E = @setbuild()
+EmptySet()
+
+julia> is_member(E, 1)   # 1 in E
+false
+
+julia> is_member(E, 0.1) # 0.1 in E
+false
+```
+"""
 function is_member(set::EmptySet, elem; kwargs...)
 
     hist = get(kwargs, :_imhist_, [])
@@ -404,6 +560,24 @@ function is_member(set::EmptySet, elem; kwargs...)
     return _event(set, :member, false, hist, kwargs)
 end
 
+"""
+    elem in set -> Bool
+
+Check if `elem` is a member of `set`
+
+# Examples
+```julia-repl
+julia> I = @setbuild(Integer)
+TypeSet(Integer)
+
+julia> 1 in I   # is_member(I, 1)
+true
+
+julia> 0.1 in I # is_member(I, 0.1)
+false
+```
+"""
 Base.:in(e, set::SBSet)         = is_member(set, e)
+
 Base.:in(e, set::EmptySet)      = false
 Base.:in(e, set::UniversalSet)  = true
