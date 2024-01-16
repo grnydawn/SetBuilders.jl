@@ -34,5 +34,6 @@ makedocs(;
 
 deploydocs(;
     repo="github.com/grnydawn/SetBuilders.jl",
+    branch = "gh-pages",
     devbranch="main",
 )
