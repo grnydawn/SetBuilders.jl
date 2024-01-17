@@ -1,3 +1,6 @@
+
+push!(LOAD_PATH,"../src/")
+
 using SetBuilders
 using Documenter
 
@@ -7,7 +10,7 @@ makedocs(;
     modules=[SetBuilders],
     authors="Youngsung Kim <youngsung.kim.act2@gmail.com>",
     #repo="https://github.com/grnydawn/SetBuilders.jl/blob/{commit}{path}#{line}",
-    repo=Documenter.Remotes.GitHub("grnydawn", "SetBuilders.jl"),
+    #repo=Documenter.Remotes.GitHub("grnydawn", "SetBuilders.jl"),
     source  = "src",
     build   = "build",
     sitename="SetBuilders",
