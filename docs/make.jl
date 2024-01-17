@@ -3,12 +3,12 @@ using Documenter
 
 DocMeta.setdocmeta!(SetBuilders, :DocTestSetup, :(using SetBuilders); recursive=true)
 
-#repo="https://github.com/grnydawn/SetBuilders.jl/blob/{commit}{path}#{line}",
 
+    #repo=Remotes.GitHub("grnydawn", "SetBuilders.jl"),
 makedocs(;
     modules=[SetBuilders],
     authors="Youngsung Kim <youngsung.kim.act2@gmail.com>",
-    repo=Remotes.GitHub("grnydawn", "SetBuilders.jl"),
+    repo="https://github.com/grnydawn/SetBuilders.jl/blob/{commit}{path}#{line}",
     source  = "src",
     build   = "build",
     sitename="SetBuilders",
