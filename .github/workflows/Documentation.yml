@@ -2,7 +2,7 @@ name: Documentation
 on:
   push:
     branches:
-      - docs
+      - master
     tags: '*'
   pull_request:
 jobs:
