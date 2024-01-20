@@ -50,6 +50,10 @@ Alternatively, it can be installed via the Pkg API:
 julia> import Pkg; Pkg.add("SetBuilders")
 ```
 
+## Documentation
+
+For information on using the package, see the [documentation](https://grnydawn.github.io/SetBuilders.jl/).
+
 ## Usage
 
 Once installed, the `SetBuilders` package can be loaded with `using SetBuilders`.
@@ -120,6 +124,6 @@ zero or more elements in the codomain, known as a forward map. It also
 includes a backward map for reverse mapping. Elements can be generated
 using these maps.
 
-# Set Sharing
+### Set Sharing
 Introduces a Julia module extension for creating, saving, and sharing sets
 as files to facilitate collaboration among users.
