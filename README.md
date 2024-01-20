@@ -1,6 +1,7 @@
 # SetBuilders.jl
 
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://grnydawn.github.io/SetBuilders.jl/dev/)
+[![Build Status](https://github.com/grnydawn/SetBuilders.jl/actions/workflows/CI.yml/badge.svg?branch=master)](https://github.com/grnydawn/SetBuilders.jl/actions/workflows/CI.yml?query=branch%3Amaster)
 
 Julia Package for Predicate and Enumerable Sets
 
