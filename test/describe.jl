@@ -37,7 +37,8 @@
 @test describe(ENUM2) == "{ x ∈ ::Int64 }"
 
 #ENUM3 = @setbuild(Union{Int64, Float64}[1, 2, 3.0])
-@test describe(ENUM3) == "{ x ∈ (::Float64, ::Int64,) }"
+@test (describe(ENUM3) == "{ x ∈ (::Float64, ::Int64,) }" ||
+       describe(ENUM3) == "{ x ∈ (::Int64, ::Float64,) }")
 
 #ENUM4 = @setbuild(Dict{String, String}[])
 @test describe(ENUM4) == "{ x ∈ ::Dict{String, String} }"
