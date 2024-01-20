@@ -1,6 +1,8 @@
 # SetBuilders.jl
 
-Julia Package for Predicate and Partially Enumerable Sets
+[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://grnydawn.github.io/SetBuilders.jl/dev/)
+
+Julia Package for Predicate and Enumerable Sets
 
 
 ## Introduction

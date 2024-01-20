@@ -88,7 +88,31 @@ result, thus enabling sophisticated set definitions through set operations.
 Additionally, SetBuilders offers features such as event handlers and
 customizable set descriptions, greatly enhancing its utility.
 
-SetBuilders introduction
+Many programming languages, including Julia, support a type of enumerable
+sets but not predicate sets in the mathematical sense. For instance,
+in Julia, it's possible to create a set containing integer values, such as
+
+```julia
+A = Set([1,2,3])
+```
+However, creating the following is not possible:
+
+```julia
+A = Set(x ∈ Integer | 0 < x < 4)
+```
+
+With the SetBuilders package, Julia users can create predicate sets, compose
+them using set operations such as unions and intersections, and check if an
+object is a member of the set.
+
+```julia
+I = @setbuild(Integer)           # creates a set from Julia Integer type
+A = @setbuild(x ∈  I, 0 < x < 4) # creates a set with the predicate of "0 < x < 4"
+B = @setbuild(x in I, 2 < x < 6) # creates a set with the predicate of "2 < x < 6"
+C = A ∩ B                        # creates an intersection with the two sets
+@assert 3 ∈ C                    # => true, 3 is a member of the set C
+@assert !(4 in C)                # => true, 4 is not a member of the set C
+```
 
 SetBuilders Usage
 

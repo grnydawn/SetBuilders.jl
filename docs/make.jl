@@ -9,8 +9,6 @@ DocMeta.setdocmeta!(SetBuilders, :DocTestSetup, :(using SetBuilders); recursive=
 makedocs(;
     modules=[SetBuilders],
     authors="Youngsung Kim <youngsung.kim.act2@gmail.com>",
-    #repo="https://github.com/grnydawn/SetBuilders.jl/blob/{commit}{path}#{line}",
-    #repo=Documenter.Remotes.GitHub("grnydawn", "SetBuilders.jl"),
     source  = "src",
     build   = "build",
     sitename="SetBuilders",
@@ -39,5 +37,5 @@ makedocs(;
 deploydocs(;
     repo="github.com/grnydawn/SetBuilders.jl",
     branch = "gh-pages",
-    devbranch="master",
+    devbranch="dev",
 )
