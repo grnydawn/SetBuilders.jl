@@ -1,4 +1,3 @@
-
 # Element Mappings
 MappedSet contains a map that associates each element in the domain with
 zero or more elements in the codomain, known as a forward map. It also

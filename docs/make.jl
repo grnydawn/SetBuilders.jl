@@ -11,6 +11,7 @@ makedocs(;
     authors="Youngsung Kim <youngsung.kim.act2@gmail.com>",
     source  = "src",
     build   = "build",
+    repo="https://github.com/grnydawn/SetBuilders.jl/blob/{commit}{path}#{line}",
     sitename="SetBuilders",
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", "false") == "true",
@@ -23,6 +24,7 @@ makedocs(;
         "SetBuilders Documentation" => "index.md",
         "Manual" => [
             "creation.md",
+            "membership.md",
             "operations.md",
             "description.md",
             "event.md",
