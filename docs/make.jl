@@ -16,7 +16,7 @@ makedocs(;
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", "false") == "true",
         canonical="https://grnydawn.github.io/SetBuilders.jl",
-        edit_link="docs",
+        edit_link="dev",
         assets=String[],
     ),
     checkdocs=:exports,
