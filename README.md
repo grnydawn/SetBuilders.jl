@@ -35,6 +35,11 @@ C = A ∩ B                        # creates an intersection with the two sets
 @assert 3 ∈ C                    # => true, 3 is a member of the set C
 @assert !(4 in C)                # => true, 4 is not a member of the set C
 ```
+There are various ways of building a set using the `@setbuild` macro. In the
+above example, the set `I` is built using the Julia `Integer` data type, while
+the sets `A` and `B` are built by specifying the domain set as well as
+a predicate using a boolean expression, and the set `C` is built using the set
+intersection operator.
 
 ## Installation
 
@@ -52,78 +57,9 @@ julia> import Pkg; Pkg.add("SetBuilders")
 
 ## Documentation
 
-For information on using the package, see the [documentation](https://grnydawn.github.io/SetBuilders.jl/).
+In addition to set creations, set operations, and membership tests shown in the
+above example, SetBuilders also provides features such as **set event**,
+**set description**, **set element generation**, and **set sharing**.
 
-## Usage
-
-Once installed, the `SetBuilders` package can be loaded with `using SetBuilders`.
-
-```julia
-using SetBuilders
-```
-
-### Set Creation
-This part demonstrates the "@setbuild" macro in SetBuilders for creating sets
-from Julia data types, predicates, and mappings. For example,
-`I = @setbuild(Integer)` creates a set of all Julia Integer type objects, and
-`A = @setbuild(x ∈ I, 0 < x < 4)` creates a set that implies to contain the
-integers 1, 2, and 3.
-
-### Set Membership
-This section explains set membership checks using operators
-such as "in" or "∈". In the previous example, "1 in A" would return "true",
-whereas "4 ∈ A" would yield "false".
-
-### Set Operations
-It explores conventional set operations like union, intersection, difference,
-symmetric difference, and complement. If `B = @setbuild(x ∈ I, 1 < x < 5)`,
-then creating an intersection `C = A ∩ B` would result in `2 in C` being true,
-but `1 in C` false.
-
-### Set Description
-This segment concentrates on generating detailed set descriptions. Combined
-with set events, these descriptions are essential for intuitively
-comprehending the reasons behind set membership outcomes in complex
-situations. Using "println(describe(C))" displays the details of set C's
-construction.:
-
-```
-{ x ∈ A | 0 < x < 4 }, where
-    A = { x ∈ ::Integer }
-∩
-{ x ∈ A | 1 < x < 5 }, where
-    A = { x ∈ ::Integer }
-```
-
-### Membership Event
-This section introduces event handlers that activate in response to the
-outcomes of membership tests and their applications in different scenarios.
-For example, using
-```
-julia> F = hist -> println(describe(hist[1].set, mark=hist[end].set))
-#1 (generic function with 1 method)
-
-julia> is_member(C, 1, on_notamember=F)
-false
-```
-
-displays the details of set C's construction, pinpointing the specific
-set that failed the membership test.
-
-```
-{ x ∈ A | 0 < x < 4 }, where
-    A = { x ∈ ::Integer }
-∩
- => { x ∈ A | 1 < x < 5 }, where
-    A = { x ∈ ::Integer }
-```
-
-### Element Mappings
-MappedSet contains a map that associates each element in the domain with
-zero or more elements in the codomain, known as a forward map. It also
-includes a backward map for reverse mapping. Elements can be generated
-using these maps.
-
-### Set Sharing
-Introduces a Julia module extension for creating, saving, and sharing sets
-as files to facilitate collaboration among users.
+For more information on using the package, see the
+[documentation](https://grnydawn.github.io/SetBuilders.jl/).
