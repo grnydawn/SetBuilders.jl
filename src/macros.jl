@@ -1,6 +1,29 @@
 # macros.jl : SetBuilder Macro User Interface
 #
 
+# SetVarException
+struct SetVarException <: Exception
+    msg::String
+end
+SetVarException() = SetVarException("A setvar error occurred")
+
+function get_kwargs(args) :: Tuple{Expr, Expr}
+
+    kwargs  = :(Dict{Symbol, Any}())
+
+    for arg in args
+        if arg isa Expr && arg.head == :(=)
+                push!(kwargs.args, :($(QuoteNode(arg.args[1])) =>
+                                   $(esc(arg.args[2]))))
+        else
+            error("Syntax error: $arg.")
+        end
+    end
+
+    return kwargs
+end
+
+
 function get_envmeta(kwargs) :: Tuple{Expr, Expr}
 
     env  = :(Dict{Symbol, Any}())
@@ -23,7 +46,7 @@ function get_envmeta(kwargs) :: Tuple{Expr, Expr}
     return env, meta
 end
 
-function get_setvars(arg::Union{Symbol, Expr})
+function get_setvars(arg::Union{Symbol, Bool, Expr})
 
     setvars = Expr(:tuple)
 
@@ -52,10 +75,12 @@ function get_setvars(arg::Union{Symbol, Expr})
                                                                  esc(svar.args[3])))
                                     end
                                 else
-                                    error("Syntax error: $(string(mysvar)).")
+                                    throw(SetVarException(
+                                    "Setvar syntax error: $(string(mysvar))."))
                                 end
                             else
-                                error("Syntax error: $(string(mysvar)).")
+                                throw(SetVarException(
+                                    "Setvar syntax error: $(string(mysvar))."))
                             end
 
                         elseif svar.args[1]::Symbol == :^
@@ -65,16 +90,20 @@ function get_setvars(arg::Union{Symbol, Expr})
                                                              esc(svar.args[2])))
                                 end
                             else
-                                error("Syntax error: $(svar.args).")
+                                throw(SetVarException(
+                                    "Setvar syntax error: $(svar.args)."))
                             end
                         else
-                            error("Syntax error: $arg.")
+                            throw(SetVarException(
+                                    "Setvar syntax error: $arg."))
                         end
                     else
-                        error("Syntax error: $arg.")
+                        throw(SetVarException(
+                                    "Setvar syntax error: $arg."))
                     end
                 else
-                    error("Syntax error: $arg.")
+                    throw(SetVarException(
+                                    "Setvar syntax error: $arg."))
                 end
 
             end
@@ -90,13 +119,13 @@ function get_setvars(arg::Union{Symbol, Expr})
                                              esc(arg.args[3])))
                 end
             else
-                error("Syntax error: $arg.")
+                throw(SetVarException( "Syntax throw(SetVarException: $arg."))
             end
         else
-            error("Syntax error: $arg.")
+            throw(SetVarException("Syntax throw(SetVarException: $arg."))
         end
     else
-        error("Syntax error: $arg.")
+        throw(SetVarException("Syntax throw(SetVarException: $arg."))
     end
 
     return setvars
@@ -243,19 +272,19 @@ function proc_build_onearg(arg, env, meta)
     end
 end
 
-function proc_build_twoargs(part1, part2, env, meta)
-
-    setvars = get_setvars(part1)
-
-    if part2 isa Expr && part2.head == :(->)
-        error("Syntax error: a mapping is provided at the place for " *
-              "a predicate at $part2")
-    end
-
-    pred    = QuoteNode(part2)
-
-    return :(SetBuilders.PredicateSet($setvars, $pred, $env, $meta))
-end
+#function proc_build_twoargs(part1, part2, env, meta)
+#
+#    setvars = get_setvars(part1)
+#
+#    if part2 isa Expr && part2.head == :(->)
+#        error("Syntax error: a mapping is provided at the place for " *
+#              "a predicate at $part2")
+#    end
+#
+#    pred    = QuoteNode(part2)
+#
+#    return :(SetBuilders.PredicateSet($setvars, $pred, $env, $meta))
+#end
 
 function proc_build_args(args, env, meta)
 
@@ -289,6 +318,38 @@ function proc_build_args(args, env, meta)
                                         $codomain, $env, $meta))
 end
 
+function split_args2(args)
+
+    kwargs  = ()
+
+    # split args to (setargs, setkwargs)
+    for (idx, arg) in enumerate(args)
+        if arg isa Expr && arg.head == :(=)
+            kwargs  = args[idx:end]
+            args    = args[1:(idx-1)]
+            break
+        end
+    end
+
+    return args, kwargs
+end
+
+function split_kwargs(args)
+
+    env  = :(Dict{Symbol, Any}())
+    meta = :(Dict{Symbol, Any}())
+
+    # split args to (setargs, setkwargs)
+    for (idx, arg) in enumerate(args)
+        if arg isa Expr && arg.head == :(=)
+            env, meta = get_envmeta(args[idx:end])
+            break
+        end
+    end
+
+    return env, meta
+end
+
 function split_args(args)
 
     env  = :(Dict{Symbol, Any}())
@@ -305,6 +366,97 @@ function split_args(args)
 
     return args, env, meta
 end
+
+# _forward_map::Tuple{Dict{Symbol, Tuple}, Tuple{Union{Bool, Expr}}} where N
+#    _forward_map::Dict{Symbol, NTuple{N, Any} where N}
+#    _forward_pred::NTuple{N, Union{Bool, Expr}} where N
+
+function get_mapping(arg, domain)
+
+    _map = Dict()
+    _pred = :(())
+
+    for setvar in domain.args
+        _map[setvar.args[1].value] = []
+    end
+    
+    if arg isa Expr
+        if arg.head == :(=)
+            if arg.args[1] isa Symbol
+                setvar = arg.args[1]
+
+                if haskey(_map, setvar)
+                    push!(_map[setvar], arg.args[2])
+                else
+                    error("Set variable, $setvar is not in $(keys(_map)).")
+                end
+            elseif arg.args[1] isa Expr && arg.args[1].head == :tuple
+                if  arg.args[2] isa Expr
+                    if arg.args[2].head == :tuple
+                        for (setvar, ex) in zip(arg.args[1].args, arg.args[2].args)
+                            push!(_map[setvar], ex)
+                        end
+                    elseif arg.args[2].head == :vect
+                        for exprs in arg.args[2].args
+                            if exprs.head == :tuple
+                                for (setvar, ex) in zip(arg.args[1].args, exprs.args)
+                                    push!(_map[setvar], ex)
+                                end
+                            else
+                                error("Unsupported mapping syntax: $exprs")
+                            end
+                        end
+                    else
+                        dump(arg)
+                        error("Unsupported mapping syntax: $(arg.args[2])")
+                    end
+                else
+                    error("Unsupported mapping syntax: $(arg.args[2])")
+                end
+            else
+                error("Unsupported mapping syntax: $arg")
+            end
+        elseif arg.head == :tuple
+            for ex in arg.args
+                if ex.head == :(=)
+                    if ex.args[1] isa Symbol
+                        setvar = ex.args[1]
+
+                        if haskey(_map, setvar)
+                            if ex.args[2].head == :vect
+                                append!(_map[setvar], ex.args[2].args)
+                            else
+                                push!(_map[setvar], ex.args[2])
+                            end
+                        else
+                            error("Set variable, $setvar is not in $(keys(_map)).")
+                        end
+                    else
+                        error("Unsupported mapping syntax: $arg")
+                    end
+                else
+                    push!(_pred.args, QuoteNode(ex))
+                end
+            end
+        else
+            dump(arg)
+            error("Unsupported mapping syntax: $arg")
+        end
+    else
+        error("Unsupported mapping syntax: $arg")
+    end
+
+    pairs = Expr(:tuple)
+    for (svar, ex) in _map
+        push!(pairs.args, Expr(:call, :(=>), QuoteNode(svar), QuoteNode(Tuple(ex))))
+    end
+
+    mapping = :(Dict{Symbol, NTuple{N, Any} where N}($pairs))
+    pred = _pred
+
+    return mapping, pred
+end
+
 
 """
     @setbuild([args...[; kwargs...]])
@@ -356,7 +508,7 @@ MappedSet((x ∈ PredicateSet((x ∈ TypeSet(Integer)) where 0 <= x < 10)) -> (z
 """
 macro setbuild(args...)
 
-    args, env, meta = split_args(args)
+    args, kwargs = split_args2(args)
 
     NARGS = length(args)
 
@@ -364,13 +516,57 @@ macro setbuild(args...)
         return :(SetBuilders.EmptySet())
 
     elseif NARGS == 1
+        env, meta   = split_kwargs(kwargs)
         return proc_build_onearg(args[1], env, meta)
 
-    elseif NARGS == 2
-        return proc_build_twoargs(args[1], args[2], env, meta)
-
     else
-        return proc_build_args(args, env, meta)
+        
+        try
+            # MappedSet
+            codomain        = get_setvars(args[2])
+            domain          = get_setvars(args[1])
+
+            if length(args) == 2
+                fmap, codomain_pred = get_mapping(kwargs[1], codomain)
+                bmap, domain_pred   = get_mapping(kwargs[2], domain)
+                env, meta   = split_kwargs(kwargs[3:end])
+
+            elseif length(args) == 3
+                fmap, codomain_pred = get_mapping(args[3], codomain)
+                bmap, domain_pred   = get_mapping(kwargs[1], domain)
+                env, meta   = split_kwargs(kwargs[2:end])
+
+            elseif length(args) == 4
+                fmap, codomain_pred = get_mapping(args[3], codomain)
+                bmap, domain_pred   = get_mapping(args[4], domain)
+                env, meta   = split_kwargs(kwargs)
+
+            else
+                error("Syntax error: $args")
+            end
+ 
+            return :(SetBuilders.MappedSet($domain, $fmap, $codomain_pred,
+                            $codomain, $bmap, $domain_pred, $env, $meta))
+
+        catch exc
+            if exc isa SetVarException
+                if NARGS == 2
+
+                    setvars     = get_setvars(args[1])
+                    env, meta   = split_kwargs(kwargs)
+                    pred        = QuoteNode(args[2])
+
+                    return :(SetBuilders.PredicateSet($setvars, $pred,
+                                                        $env, $meta))
+                else
+                    error("Wrong syntax: $(args)")
+                    #return proc_build_args(args, env, meta)
+                end
+
+            else
+                rethrow()
+            end
+        end
     end
 end
 

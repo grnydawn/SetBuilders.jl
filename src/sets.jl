@@ -212,12 +212,16 @@ false
 """
 struct MappedSet <: SBSet
     _domain::NTuple{N, Tuple{Symbol, SBSet}} where N
-    _forward_map::Tuple{Expr, Union{Bool, Expr}}
-    _backward_map::Tuple{Expr, Union{Bool, Expr}}
+    _forward_map::Dict{Symbol, NTuple{N, Any} where N}
+    _codomain_pred::NTuple{N, Union{Bool, Expr}} where N
     _codomain::NTuple{N, Tuple{Symbol, SBSet}} where N
+    _backward_map::Dict{Symbol, NTuple{N, Any} where N}
+    _domain_pred::NTuple{N, Union{Bool, Expr}} where N
     _env::Dict{Symbol, Any}
     _meta::Dict{Symbol, Any}
 end
+#    _forward_map::Tuple{Expr, Union{Bool, Expr}}
+#    _backward_map::Tuple{Expr, Union{Bool, Expr}}
 
 function Base.show(io::IO, s::MappedSet)
     dvars = ["($k ∈ $v)" for (k,v) in s._domain]
@@ -236,12 +240,7 @@ difference.
 # Examples
 ```julia-repl
 julia> I = @setbuild(Integer)
-TypeSet(Integer)
-
-julia> A = @setbuild(x in I, 0 <= x < 10)
-PredicateSet((x ∈ TypeSet(Integer)) where 0 <= x < 10)
-
-julia> B = @setbuild(x in I, 5 <= x < 15)
+TypeSet(Integer) julia> A = @setbuild(x in I, 0 <= x < 10) PredicateSet((x ∈ TypeSet(Integer)) where 0 <= x < 10) julia> B = @setbuild(x in I, 5 <= x < 15)
 PredicateSet((x ∈ TypeSet(Integer)) where 5 <= x < 15)
 
 julia> C = A ∩ B

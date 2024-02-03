@@ -28,12 +28,8 @@ object is a member of the set.
 ```julia
 I = @setbuild(Integer)           # creates a set from Julia Integer type
 A = @setbuild(x ∈  I, 0 < x < 4) # creates a set with the predicate of "0 < x < 4"
-B = @setbuild(x in I, 2 < x < 6) # creates a set with the predicate of "2 < x < 6"
-C = A ∩ B                        # creates an intersection with the two sets
 @assert 3 ∈ C                    # => true, 3 is a member of the set C
-@assert !(4 in C)                # => true, 4 is not a member of the set C
 ```
-
 
 ## Sets in Mathematics
 
@@ -78,7 +74,7 @@ Consequently, sets in programming, despite their utility, represent a more
 confined aspect of the extensive and foundational role they play in
 mathematics.
 
-## SetBuilders: Harnessing the Power of Predicate-Based Sets
+## [SetBuilders](https://github.com/grnydawn/SetBuilders.jl): Harnessing the Power of Predicate-Based Sets
 
 Set, vital in math, finds new life in programming with Julia's SetBuilders.
 This tool innovatively allows sets to be defined not just by listing
@@ -88,38 +84,14 @@ result, thus enabling sophisticated set definitions through set operations.
 Additionally, SetBuilders offers features such as event handlers and
 customizable set descriptions, greatly enhancing its utility.
 
-Many programming languages, including Julia, support a type of enumerable
-sets but not predicate sets in the mathematical sense. For instance,
-in Julia, it's possible to create a set containing integer values, such as
-
-```julia
-A = Set([1,2,3])
-```
-However, creating the following is not possible:
-
-```julia
-A = Set(x ∈ Integer | 0 < x < 4)
-```
-
-With the SetBuilders package, Julia users can create predicate sets, compose
-them using set operations such as unions and intersections, and check if an
-object is a member of the set.
-
-```julia
-I = @setbuild(Integer)           # creates a set from Julia Integer type
-A = @setbuild(x ∈  I, 0 < x < 4) # creates a set with the predicate of "0 < x < 4"
-B = @setbuild(x in I, 2 < x < 6) # creates a set with the predicate of "2 < x < 6"
-C = A ∩ B                        # creates an intersection with the two sets
-@assert 3 ∈ C                    # => true, 3 is a member of the set C
-@assert !(4 in C)                # => true, 4 is not a member of the set C
-```
-
-SetBuilders Usage
-
 ## Contents
 
-```@index
-```
-
-[SetBuilders Github Repository: ](https://github.com/grnydawn/SetBuilders.jl).
-
+* [Set Creation](@ref): explains how to use `@setbuild` macro for building various types of sets.
+* [Set Membership](@ref): shows examples of using `in` and `∈` set membership operators.
+* [Set Operations](@ref): shows examples of using set operations.
+* [Set Description](@ref): explains how to generate set descriptions.
+* [Membership Event](@ref): explains how to use membership event handlers.
+* [Element Mappings](@ref): explains how to generate set elements from Mapped sets.
+* [Set Sharing](@ref): explains how to create/use/share a Julia module for sets
+* [Reference](@ref): provides reference manual for using SetBuilders.
+* [Developer Documentaion](@ref): explains how to extend SetBuilders.

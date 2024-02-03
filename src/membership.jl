@@ -1,5 +1,7 @@
 # membership.jl : SetBuilder Set Membership Checks
 
+import Base.Iterators
+
 # TODO: function compositon : setA -> setB -> setC ==> setA -> setC
 # TODO: debug=true, on_notamember=(h->println(describe(h[1].set, mark=h[end].set)))
 # TODO: rewriting set operations to CNF??
@@ -32,43 +34,31 @@ function _event(set, eventtype, event, hist, kwargs)
     return event
 end
 
-function _filter_elem(elems, check, names)
+function _check_pred(elem, checks, env, names)
 
-    if !(elems isa Vector)
-        elems = [elems]            
-    end
+    all_passed = true
 
-    buf = []
-
-    for elem in elems
-        env = Dict{Symbol, Any}()
-
-        if length(names) == 1
-            env[names[1]] = elem
-
-        else
-            for (n, e) in zip(names, elem)
-                env[n] = e
-            end
-        end 
-
+    for check in checks
         if check isa Bool
-            if check == true
-                push!(buf, elem)
+            if check == false
+                all_passed = false
+                break
             end
-        elseif sb_eval(check, env)
-            push!(buf, elem)
+        elseif !sb_eval(check, env)
+            all_passed = false
+            break
         end
     end
 
-    return buf
+    return all_passed
 end
 
 function _check_member(e, d, h, kwargs)
-    if length(d) == 1
 
+    if length(d) == 1
         if haskey(kwargs, :_imhist_)
             return is_member(d[1][2], e; kwargs...)
+
         else
             return is_member(d[1][2], e; _imhist_=h, kwargs...)
         end
@@ -76,6 +66,7 @@ function _check_member(e, d, h, kwargs)
         for (_e, _d) in zip(e, d)
             if haskey(kwargs, :_imhist_)
                 is_member(_d[2], _e; kwargs...) || return false
+
             else
                 (is_member(_d[2], _e; _imhist_=h, kwargs...) ||
                     return false)
@@ -85,9 +76,98 @@ function _check_member(e, d, h, kwargs)
     end
 end
 
-function backward_map(set::MappedSet, coelems; hist=[], kwargs...)
+#function backward_map(set::MappedSet, coelems; hist=[], kwargs...)
+#
+#    doelems = []
+#
+#    # setvar names
+#    if haskey(set._meta, :_domain_names_)
+#        donames = set._meta[:_domain_names]
+#    else
+#        donames = [n[1] for n in set._domain]
+#        set._meta[:_domain_names] = donames
+#    end
+#
+#    if haskey(set._meta, :_codomain_names_)
+#        conames = set._meta[:_codomain_names]
+#    else
+#        conames = [n[1] for n in set._codomain]
+#        set._meta[:_codomain_names] = conames
+#    end
+#
+#    for coelem in coelems
+#
+#        # check coelem in codomain
+#        _check_member(coelem, set._codomain, hist, kwargs) || continue
+#
+#        # filter doelems
+#        filtered_coelem = _filter_elem(coelem, set._forward_map[2], conames)
+#
+#        if length(filtered_coelem) == 0
+#            push!(hist, (set = set, elem = coelem))
+#            _event(set, :member, false, hist, kwargs)
+#            continue
+#        end
+#        
+#        # generate backward func
+#        bfunc = sb_eval(set._backward_map[1], set._env)
+#
+#        # generate doelem from coelem using the backward func
+#        try
+#            if length(conames) > 1
+#                gen_doelems = Base.invokelatest(bfunc, filtered_coelem[1]...)
+#            else
+#                gen_doelems = Base.invokelatest(bfunc, filtered_coelem[1])
+#            end
+#
+#            # filter doelems
+#            for e in _filter_elem(gen_doelems, set._backward_map[2], donames)
+#                _check_member(e, set._domain, hist, kwargs) || continue
+#                push!(doelems, e)
+#            end
+#        catch err
+#            error("Invoking set expression, $(set._backward_map[1]), " *
+#                  "is failed: $err")
+#        end
+#    end
+#
+#    return doelems
+#end
 
-    doelems = []
+function gen_doelems(c::Channel, elems, env, names)
+
+    buf = []
+
+    for name in names
+        push!(buf, elems[name])
+    end
+
+    for elem in Iterators.product(buf...)
+
+        if length(names) == 1
+            env[names[1]] = elem[1]
+            put!(c, (elem[1], env))
+
+        else
+            for (n, e) in zip(names, elem)
+                env[n] = e
+            end
+            put!(c, (elem, env))
+        end
+
+    end
+end
+
+#    _domain::NTuple{N, Tuple{Symbol, SBSet}} where N
+#    _forward_map::Dict{Symbol, NTuple{N, Any} where N}
+#    _codomain_pred::NTuple{N, Union{Bool, Expr}} where N
+#    _codomain::NTuple{N, Tuple{Symbol, SBSet}} where N
+#    _backward_map::Dict{Symbol, NTuple{N, Any} where N}
+#    _domain_pred::NTuple{N, Union{Bool, Expr}} where N
+#    _env::Dict{Symbol, Any}
+#    _meta::Dict{Symbol, Any}
+
+function get_setnames(set)
 
     # setvar names
     if haskey(set._meta, :_domain_names_)
@@ -104,102 +184,346 @@ function backward_map(set::MappedSet, coelems; hist=[], kwargs...)
         set._meta[:_codomain_names] = conames
     end
 
-    for coelem in coelems
+    return donames, conames
+end
 
-        # check coelem in codomain
-        _check_member(coelem, set._codomain, hist, kwargs) || continue
+function do_mapping(
+        set::MappedSet, srcelems, mapping,
+        srcnames, srcdomain, srcpred,
+        dstnames, dstdomain, dstpred,
+        hist, kwargs)
 
-        # filter doelems
-        filtered_coelem = _filter_elem(coelem, set._forward_map[2], conames)
+    # check if a vector input
+    is_vector = srcelems isa Vector
 
-        if length(filtered_coelem) == 0
-            push!(hist, (set = set, elem = coelem))
+    if !is_vector
+        srcelems = [srcelems]            
+    end
+
+    dstelems = []
+
+    srcenv = deepcopy(set._env)
+    _dstenv = deepcopy(set._env)
+
+    # generate dst element(s) per each src element
+    for srcelem in srcelems
+
+        if length(srcnames) == 1
+            srcenv[srcnames[1]] = srcelem isa Vector ? srcelem[1] : srcelem
+
+        else
+            for (n, e) in zip(srcnames, srcelem)
+                srcenv[n] = e
+            end
+        end
+
+        # check srcelem in src domain
+        _check_member(srcelem, srcdomain, hist, kwargs) || continue
+
+        # check if elem passes pred
+        if !_check_pred(srcelem, srcpred, srcenv, srcnames)
+            push!(hist, (set = set, elem = srcelem))
             _event(set, :member, false, hist, kwargs)
             continue
         end
-        
-        # generate backward func
-        bfunc = sb_eval(set._backward_map[1], set._env)
 
-        # generate doelem from coelem using the backward func
+
+        # generate dst elem from srcelem using the srcmap
         try
-            if length(conames) > 1
-                gen_doelems = Base.invokelatest(bfunc, filtered_coelem[1]...)
-            else
-                gen_doelems = Base.invokelatest(bfunc, filtered_coelem[1])
+            _dstelems = Dict{Symbol, Any}()
+
+            for (svar, convs) in mapping
+                if haskey(_dstelems, svar)
+                    _dvarelems = _dstelems[svar]
+                else
+                    _dvarelems = []
+                    _dstelems[svar] = _dvarelems 
+                end
+
+                for conv in convs
+                    _elems = sb_eval(conv, srcenv)
+
+                    if _elems isa Vector
+                        append!(_dvarelems, _elems)
+
+                    else
+                        push!(_dvarelems, _elems)
+                    end
+                end
             end
 
             # filter doelems
-            for e in _filter_elem(gen_doelems, set._backward_map[2], donames)
-                _check_member(e, set._domain, hist, kwargs) || continue
-                push!(doelems, e)
+            my_channel = Channel( (c) -> gen_doelems(c, _dstelems, _dstenv, dstnames)) 
+
+            for (dstelem, dstenv) in my_channel
+                _check_member(dstelem, dstdomain, hist, kwargs) || continue
+
+                # check if elem passes pred
+                if !_check_pred(dstelem, dstpred, dstenv, dstnames)
+                    push!(hist, (set = set, elem = dstelem))
+                    _event(set, :member, false, hist, kwargs)
+                    continue
+                end
+
+                push!(dstelems, dstelem)
             end
+
         catch err
-            error("Invoking set expression, $(set._backward_map[1]), " *
+            error("Invoking set expression, $mapping, " *
                   "is failed: $err")
         end
     end
 
-    return doelems
+    if is_vector
+        return dstelems
+
+    elseif length(dstelems) == 0
+        return nothing
+
+    elseif length(dstelems) == 1
+        return dstelems[1]
+
+    else
+        return dstelems
+    end
+end
+
+
+function backward_map(set::MappedSet, coelems; hist=[], kwargs...)
+
+    donames, conames = get_setnames(set)
+
+    return do_mapping(
+            set, coelems, set._backward_map,
+            conames, set._codomain, set._codomain_pred,
+            donames, set._domain, set._domain_pred,
+            hist, kwargs)
 end
 
 function forward_map(set::MappedSet, doelems; hist=[], kwargs...)
 
-    coelems = []
+    donames, conames = get_setnames(set)
 
-    # setvar names
-    if haskey(set._meta, :_domain_names_)
-        donames = set._meta[:_domain_names]
-    else
-        donames = [n[1] for n in set._domain]
-        set._meta[:_domain_names] = donames
-    end
-
-    if haskey(set._meta, :_codomain_names_)
-        conames = set._meta[:_codomain_names]
-    else
-        conames = [n[1] for n in set._codomain]
-        set._meta[:_codomain_names] = conames
-    end
-
-    for doelem in doelems
-
-        # first, check doelem in domain
-        _check_member(doelem, set._domain, hist, kwargs) || continue
-
-        filtered_doelem = _filter_elem(doelem, set._backward_map[2], donames)
-
-        if length(filtered_doelem) == 0
-            push!(hist, (set = set, elem = doelem))
-            _event(set, :member, false, hist, kwargs)
-            continue
-        end
-
-        # generate forward func
-        ffunc = sb_eval(set._forward_map[1], set._env)
-
-        # generate coelem2 from the generated doelem using forward func
-        try
-            # generate codomain elems
-            if length(donames) > 1
-                gen_coelems = Base.invokelatest(ffunc, filtered_doelem[1]...)
-            else
-                gen_coelems = Base.invokelatest(ffunc, filtered_doelem[1])
-            end
-
-            # filter codomain elems
-            for e in _filter_elem(gen_coelems, set._forward_map[2], conames)
-                _check_member(e, set._codomain, hist, kwargs) || continue
-                push!(coelems, e)
-            end
-        catch err
-            error("Invoking set expression, $(set._forward_map[1]), " *
-                  "is failed: $err")
-        end
-    end
-
-    return coelems
+    return do_mapping(
+            set, doelems, set._forward_map,
+            donames, set._domain, set._domain_pred,
+            conames, set._codomain, set._codomain_pred,
+            hist, kwargs)
 end
+
+#function backward_map(set::MappedSet, coelems; hist=[], kwargs...)
+#
+#    doelems = []
+#
+#    donames, conames = get_setnames(set)
+#
+#    # check if a vector input
+#    is_vector = coelems isa Vector
+#
+#    if !is_vector
+#        coelems = [coelems]            
+#    end
+#
+#    coenv = deepcopy(set._env)
+#    _doenv = deepcopy(set._env)
+#
+#    # generate domain element(s) per each codomain element
+#    for coelem in coelems
+#
+#        if length(conames) == 1
+#            coenv[conames[1]] = coelem isa Vector ? coelem[1] : coelem
+#
+#        else
+#            for (n, e) in zip(conames, coelem)
+#                coenv[n] = e
+#            end
+#        end
+#
+#        # check coelem in codomain
+#        _check_member(coelem, set._codomain, hist, kwargs) || continue
+#
+#        # check if elem passes pred
+#        if !_check_pred(coelem, set._codomain_pred, coenv, conames)
+#            push!(hist, (set = set, elem = coelem))
+#            _event(set, :member, false, hist, kwargs)
+#            continue
+#        end
+#
+#        # generate doelem from coelem using the backward func
+#        try
+#            _doelems = Dict{Symbol, Any}()
+#
+#            for (dvar, bconvs) in set._backward_map
+#
+#                if haskey(_doelems, dvar)
+#                    _dvarelems = _doelems[dvar]
+#                else
+#                    _dvarelems = []
+#                    _doelems[dvar] = _dvarelems 
+#                end
+#
+#                for bconv in bconvs
+#                    _elems = sb_eval(bconv, coenv)
+#
+#                    if _elems isa Vector
+#                        append!(_dvarelems, _elems)
+#
+#                    else
+#                        push!(_dvarelems, _elems)
+#                    end
+#                end
+#            end
+#
+#            # filter doelems
+#            my_channel = Channel( (c) -> gen_doelems(c, _doelems, _doenv, donames)) 
+#
+#            for (doelem, doenv) in my_channel
+#                println("SSS ", doelem, doenv)
+#                _check_member(doelem, set._domain, hist, kwargs) || continue
+#
+#                # check if elem passes pred
+#                if !_check_pred(doelem, set._domain_pred, doenv, donames)
+#                    push!(hist, (set = set, elem = doelem))
+#                    _event(set, :member, false, hist, kwargs)
+#                    continue
+#                end
+#
+#                push!(doelems, doelem)
+#            end
+#
+#        catch err
+#            error("Invoking set expression, $(set._backward_map[1]), " *
+#                  "is failed: $err")
+#        end
+#    end
+#
+#    if is_vector
+#        return doelems
+#
+#    elseif length(doelems) == 0
+#        return nothing
+#
+#    elseif length(doelems) == 1
+#        return doelems[1]
+#
+#    else
+#        return doelems
+#    end
+#end
+
+#function forward_map(set::MappedSet, doelems; hist=[], kwargs...)
+#
+#    coelems = []
+#
+#    donames, conames = get_setnames(set)
+#
+#    is_vector = doelems isa Vector
+#
+#    if !is_vector
+#        doelems = [doelems]
+#    end
+#
+#    doenv = deepcopy(set._env)
+#    _coenv = deepcopy(set._env)
+#
+#    for doelem in doelems
+#
+#        # first, check doelem in domain
+#        _check_member(doelem, set._domain, hist, kwargs) || continue
+#
+#        if !_check_pred(doelem, set._domain_pred, doenv, donames)
+#            push!(hist, (set = set, elem = doelem))
+#            _event(set, :member, false, hist, kwargs)
+#            continue
+#        end
+#
+##33
+#        # generate coelem from doelem using the forward func
+#        try
+#            _coelems = Dict{Symbol, Any}()
+#
+#            for (cvar, fconvs) in set._forward_map
+#
+#                if haskey(_coelems, cvar)
+#                    _cvarelems = _coelems[cvar]
+#                else
+#                    _cvarelems = []
+#                    _doelems[dvar] = _dvarelems 
+#                end
+#
+#                for bconv in bconvs
+#                    _elems = sb_eval(bconv, coenv)
+#
+#                    if _elems isa Vector
+#                        append!(_dvarelems, _elems)
+#
+#                    else
+#                        push!(_dvarelems, _elems)
+#                    end
+#                end
+#            end
+#
+#            # filter doelems
+#            my_channel = Channel( (c) -> gen_doelems(c, _doelems, _doenv, donames)) 
+#
+#            for (doelem, doenv) in my_channel
+#                println("SSS ", doelem, doenv)
+#                _check_member(doelem, set._domain, hist, kwargs) || continue
+#
+#                # check if elem passes pred
+#                if !_check_pred(doelem, set._domain_pred, doenv, donames)
+#                    push!(hist, (set = set, elem = doelem))
+#                    _event(set, :member, false, hist, kwargs)
+#                    continue
+#                end
+#
+#                push!(doelems, doelem)
+#            end
+#
+#        catch err
+#            error("Invoking set expression, $(set._backward_map[1]), " *
+#                  "is failed: $err")
+#        end
+#    end
+####
+#
+#        # generate forward func
+#        ffunc = sb_eval(set._forward_map[1], set._env)
+#
+#        # generate coelem2 from the generated doelem using forward func
+#        try
+#            # generate codomain elems
+#            if length(donames) > 1
+#                gen_coelems = Base.invokelatest(ffunc, filtered_doelem[1]...)
+#            else
+#                gen_coelems = Base.invokelatest(ffunc, filtered_doelem[1])
+#            end
+#
+#            # filter codomain elems
+#            for e in _filter_elem(gen_coelems, set._forward_map[2], conames)
+#                _check_member(e, set._codomain, hist, kwargs) || continue
+#                push!(coelems, e)
+#            end
+#        catch err
+#            error("Invoking set expression, $(set._forward_map[1]), " *
+#                  "is failed: $err")
+#        end
+#    end
+#
+#    if is_vector
+#        return coelems
+#
+#    elseif length(coelems) == 0
+#        return nothing
+#
+#    elseif length(coelems) == 1
+#        return coelems[1]
+#
+#    else
+#        return coelems
+#
+#    end
+#end
 
 """
     is_member(set::EnumerableSet, elem; kwargs...)

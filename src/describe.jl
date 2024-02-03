@@ -160,6 +160,32 @@ function describe(set::PredicateSet; prepend="", prefix="", depth=0,
     return join(lines, "\n")
 end
 
+function str_pred(preds)
+    lines = String[]
+
+    for pred in preds
+        push!(lines, "$pred")
+    end
+
+    return join(lines, ", ")
+end
+
+function str_mapping(mapping)
+
+    lines = String[]
+    for (svar, exprtuple) in mapping
+        if length(exprtuple) == 1
+            push!(lines, "$svar = $(exprtuple[1])")
+
+        elseif length(exprtuple) != 0
+            push!(lines, "$svar = $(exprtuple)")
+        end 
+    end
+
+    return join(lines, ", ")
+end
+
+
 function describe(set::MappedSet; prepend="", prefix="", depth=0,
                     limit=-1, mark=nothing, collect=nothing) :: String
 
@@ -169,7 +195,7 @@ function describe(set::MappedSet; prepend="", prefix="", depth=0,
 
     limit >= 0 && depth > limit && return ""
 
-    if set._forward_map[2] == false || set._backward_map[2] == false
+    if any(x->x==false, set._domain_pred) || any(x->x==false, set._codomain_pred) 
         return (describe(EmptySet(), prepend=prepend, prefix=prefix,
                 depth=depth, limit=limit, mark=mark, collect=collect) *
                 " : filtered all elements out")
@@ -220,16 +246,16 @@ function describe(set::MappedSet; prepend="", prefix="", depth=0,
     end
 
     if !haskey(set._meta, :sb_set_desc)
-        push!(lines, tabs1*"F-MAP = $(set._forward_map[1])")
+        push!(lines, tabs1*"F-MAP: $(str_mapping(set._forward_map))")
 
-        if set._forward_map[2] != true
-            lines[end] *= ", with filter: $(set._forward_map[2])"
+        if length(set._codomain_pred) > 0
+            lines[end] *= ", with filter: $(str_pred(set._codomain_pred))"
         end
         
-        push!(lines, tabs1*"B-MAP = $(set._backward_map[1])")
+        push!(lines, tabs1*"B-MAP: $(str_mapping(set._backward_map))")
 
-        if set._backward_map[2] != true
-            lines[end] *= ", with filter: $(set._backward_map[2])"
+        if length(set._domain_pred) > 0
+            lines[end] *= ", with filter: $(str_pred(set._domain_pred))"
         end
     end
 

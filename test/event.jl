@@ -4,7 +4,7 @@
 #I = @setbuild(Integer)
 #PRED3 = @setbuild(x in I, 0 <= x < 10)
 #PRED4 = @setbuild(x in I, 5 <= x < 15)
-#MAPD1 = @setbuild(z in I, (x in PRED3) -> x + 5, z -> z - 5)
+#MAPD1 = @setbuild(x in PRED3, z in I, z = x + 5, x = z - 5)
 
 # event handler for debugging
 #P = hist -> println("PASS\n"*describe(hist[1].set, mark=hist[end].set))
@@ -56,12 +56,8 @@ P7 = hist -> (@test describe(hist[1].set, mark=hist[end].set) == raw"""
 => { z ∈ B }, where
     A = { x ∈ A.A | 0 <= x < 10 }, where
         A.A = { x ∈ ::Integer }
- => F-MAP = (x,)->begin
-        x + 5
-    end
- => B-MAP = z->begin
-        z - 5
-    end
+ => F-MAP: z = x + 5
+ => B-MAP: x = z - 5
     B = { x ∈ ::Integer }""")
 
 @test is_member(MAPD1, 5, on_member=P7)
@@ -75,12 +71,8 @@ F-MAP \/
 { z ∈ B }, where
  => A = { x ∈ A.A | 0 <= x < 10 }, where
         A.A = { x ∈ ::Integer }
-    F-MAP = (x,)->begin
-        x + 5
-    end
-    B-MAP = z->begin
-        z - 5
-    end
+    F-MAP: z = x + 5
+    B-MAP: x = z - 5
     B = { x ∈ ::Integer }""")
 
 @test !is_member(MAPD1, 4, on_notamember=F8)
@@ -94,12 +86,8 @@ F-MAP \/
 { z ∈ B }, where
     A = { x ∈ A.A | 0 <= x < 10 }, where
      => A.A = { x ∈ ::Integer }
-    F-MAP = (x,)->begin
-        x + 5
-    end
-    B-MAP = z->begin
-        z - 5
-    end
+    F-MAP: z = x + 5
+    B-MAP: x = z - 5
  => B = { x ∈ ::Integer }""")
 
 @test !is_member(MAPD1, 0.1, on_notamember=F9)

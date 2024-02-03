@@ -1,13 +1,21 @@
 # Set Membership
-This section explains set membership checks using operators
-such as "in" or "∈". In the previous example, "1 in A" would return "true",
-whereas "4 ∈ A" would yield "false".
-
-Once a set is created, checking if an object is a member of the set is
-straightforward using the `in` or `∈` operators.
+This section explains set membership checks using "in" or "∈"
+operators by showing various examples.
 
 All of the following `@assert` checks should pass.
-```
+```julia
+# test fixtures
+value = 10
+
+struct MyStruct
+    a
+    b
+end
+
+function myfunc(x)
+    x - 5
+end
+
 # Empty set
 E = @setbuild()
 @assert !(1 in E)
@@ -29,7 +37,7 @@ S = @setbuild(MyStruct)
 @assert MyStruct(1,2) in S
 @assert !(1 in S)
 
-# Partially enumeratable sets
+# Enumeratable sets
 A = @setbuild([1, 2, 3])
 @assert 1 in A
 @assert !(4 in A)

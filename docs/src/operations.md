@@ -1,10 +1,12 @@
 # Set Operations
-It explores conventional set operations like union, intersection, difference,
-symmetric difference, and complement. If `B = @setbuild(x ∈ I, 1 < x < 5)`,
-then creating an intersection `C = A ∩ B` would result in `2 in C` being true,
-but `1 in C` false.
+SetBuilders sets support conventional set operations including union,
+intersection, difference, symmetric difference, and complement.
 
-```
+The first argument of the `all` function in the examples is an anonymous
+function that is applied to all items in the last argument.
+
+All of the following `@assert` checks should pass.
+```julia
 E = @setbuild()
 U = @setbuild(Any)
 

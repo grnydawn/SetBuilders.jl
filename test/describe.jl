@@ -110,7 +110,7 @@
         B.A = { x ∈ ::Integer }"""
 
 ## Mapped sets
-#MAPD1 = @setbuild(z in I, (x in PRED3) -> x + 5, z -> z - 5)
+#MAPD1 = @setbuild(x in PRED3, z in I, z = x + 5, x = z - 5)
 @test describe(MAPD1) == raw"""
 
 { x ∈ A }
@@ -120,12 +120,8 @@ F-MAP \/
 { z ∈ B }, where
     A = { x ∈ A.A | 0 <= x < 10 }, where
         A.A = { x ∈ ::Integer }
-    F-MAP = (x,)->begin
-        x + 5
-    end
-    B-MAP = z->begin
-        z - 5
-    end
+    F-MAP: z = x + 5
+    B-MAP: x = z - 5
     B = { x ∈ ::Integer }"""
 
 
@@ -177,12 +173,8 @@ F-MAP \/
 { z ∈ B }, where
     A = { x ∈ A.A | 0 <= x < 10 }, where
         A.A = { x ∈ ::Integer }
-    F-MAP = (x,)->begin
-        x + 5
-    end
-    B-MAP = z->begin
-        z - 5
-    end
+    F-MAP: z = x + 5
+    B-MAP: x = z - 5
     B = { x ∈ ::Integer }"""
 
 collect_func = set -> string(typeof(set))

@@ -141,36 +141,36 @@ push!(ENUM4, d1)
 @test !(1im in PRED8)
 
 ## Mapped sets
-#MAPD1 = @setbuild(z in I, (x in PRED3) -> x + 5, z -> z - 5)
+#MAPD1 = @setbuild(x in PRED3, z in I, z = x + 5, x = z - 5)
 @test 5 in MAPD1
 @test !(0 in MAPD1)
 @test is_member(MAPD1, 5)
 
-#MAPD2 = @setbuild(z in I, (x in PRED4) -> x + 5, z -> func(z), func=myfunc)
+#MAPD2 = @setbuild(x in PRED4, z in I, z = x + 5, x = func(z), func=myfunc)
 @test 10 in MAPD2
 @test !(5 in MAPD2)
 
-#MAPD3 = @setbuild(z in S, (x in PRED3, y in PRED4) -> mystruct(x, y),
-#                z -> (z.a, z.b), mystruct=MyStruct)
+#MAPD3 = @setbuild((x in PRED3, y in PRED4), z in S,  z = mystruct(x, y),
+#                (x, y) = (z.a, z.b), mystruct=MyStruct)
 @test MyStruct(0, 5) in MAPD3
 @test !(MyStruct(10, 15) in MAPD3)
 
-#MAPD4 = @setbuild(z in S, ((x, y) in PRED3) -> mystruct(x, y),
-#                z -> (z.a, z.b), mystruct=MyStruct)
+#MAPD4 = @setbuild((x, y) in PRED3, z in S, z = mystruct(x, y),
+#                (x, y) = (z.a, z.b), mystruct=MyStruct)
 @test MyStruct(0, 0) in MAPD4
 @test !(MyStruct(10, 10) in MAPD4)
 
-#MAPD5 = @setbuild(z in S, ((x, y) in PRED5) -> mystruct(x[1], y[2]),
-#                z -> ((z.a, z.b), (z.a, z.b)), mystruct=MyStruct)
+#MAPD5 = @setbuild(x in PRED5, z in S, z = mystruct(x[1], x[2]),
+#                x = [(z.a, z.b), (z.a, z.b)], mystruct=MyStruct)
 @test MyStruct(4, 11) in MAPD5
 @test !(MyStruct(9, 10) in MAPD5)
 
-#MAPD6 = @setbuild(z in S, ((x, y) in PRED3) -> mystruct(x, y),
-#                z -> [(z.a, z.b), (z.b, z.a)], mystruct=MyStruct)
+#MAPD6 = @setbuild((x, y) in PRED3, z in S, z = mystruct(x, y),
+#                (x, y) = [(z.a, z.b), (z.b, z.a)], mystruct=MyStruct)
 @test MyStruct(5, 5) in MAPD6
 @test !(MyStruct(10, 10) in MAPD6)
 
-#MAPD7 = @setbuild(x in I, (y in I) -> y + 1, x -> x - 1,
-#                0 <= x < 10, 0 <= y < 10)
+#MAPD7 = @setbuild(x in I, y in I, (y = x + 1, 0 <= y < 10),
+#                    (x = y - 1, 0 <= x < 10))
 @test 1 in MAPD7
 @test !(10 in MAPD7)
