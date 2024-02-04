@@ -30,7 +30,7 @@ I = @setbuild(Integer)           # creates a set from Julia Integer type
 A = @setbuild(x ∈  I, 0 < x < 4) # creates a set with the predicate of "0 < x < 4"
 B = @setbuild(x in I, 2 < x < 6) # creates a set with the predicate of "2 < x < 6"
 C = A ∩ B                        # creates an intersection with the two sets
-                                 # As an alternative, "C = intersection(A, B)" can be used
+                                 # As an alternative, "intersect(A, B)" can be used
 @assert 3 ∈ C                    # => true, 3 is a member of the set C
                                  # As an alternative, "3 in C" can be used
 @assert !(4 in C)                # => true, 4 is not a member of the set C
@@ -134,12 +134,12 @@ first argument set. Optionally, the `describe` function accepts a `mark`
 keyword to indicate a specific set in the output. In this case, `hist[end].set`
 is the set that fails the membership test.
 
-For further details, please continue reading the following manual."
+For further details, please continue reading the following manual.
 
 ## Contents
 
 * [Set Creation](@ref): explains how to use `@setbuild` macro for building various types of sets.
-* [Set Membership](@ref): shows examples of using `in` and `∈` set membership operators.
+* [Set Membership](@ref): shows examples of using `is_member` set membership function.
 * [Set Operations](@ref): shows examples of using set operations.
 * [Set Description](@ref): explains how to generate set descriptions.
 * [Membership Event](@ref): explains how to use membership event handlers.
