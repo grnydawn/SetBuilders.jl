@@ -103,10 +103,6 @@ result, thus enabling sophisticated set definitions through set operations.
 Additionally, SetBuilders offers features such as set event and
 customizable set descriptions, greatly enhancing its utility.
 
-The following example demonstrates how to identify the set that fails the
-membership test among the sets in the set composition using set event and
-set description features.
-
 ```julia
 # continues from the code example at the beginning of this page
 
@@ -114,9 +110,13 @@ F = hist -> println(describe(hist[1].set, mark=hist[end].set))
 is_member(C, 1, on_notamember=F)
 ```
 
+The above example demonstrates how to identify the set that fails the
+membership test among the sets in the set composition using set event and
+set description features.
+
 The value `1` is not a member of set `C` because the predicate of set `B`
-excludes it. The output from the previous code indicates that the "=>"
-mark correctly identifies set `B` as the reason for exclusion.
+excludes it. The following output from the previous code indicates that
+the "=>" mark correctly identifies set `B` as the reason for exclusion.
 
 ```julia
 { x ∈ A | 0 < x < 4 }, where
@@ -131,8 +131,8 @@ The function `is_member` serves a similar purpose to the membership operator,
 `on_notamember` accepts a function with one input argument, `hist`, and prints
 the output from the `describe` function, which details the structure of the
 first argument set. Optionally, the `describe` function accepts a `mark`
-keyword to indicate a specific set in the output. In this case, `hist[end].set`
-is the set that fails the membership test.
+keyword argument to indicate a specific set in the output. In this case,
+`hist[end].set` is the set that fails the membership test.
 
 For further details, please continue reading the following manual.
 
