@@ -22,12 +22,9 @@ However, creating the following is not possible:
 ```julia
 A = Set(x ∈ Integer | 0 < x < 4)
 ```
-
-With the SetBuilders package, Julia users can create predicate sets and
-combine them using set operations such as unions and intersections. They
-can also check if an object is a member of a set and utilize many more
-advanced features, including set events, set descriptions, set element
-generation, and set sharing.
+The SetBuilders package enables Julia users to create predicate sets,
+combine them using set operations like unions and intersections, and
+check if an object is a member of a set.
 
 ```julia
 I = @setbuild(Integer)           # creates a set from Julia Integer type
