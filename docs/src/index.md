@@ -100,8 +100,41 @@ This tool innovatively allows sets to be defined not just by listing
 elements but also through predicates - logical formulas yielding true for
 set members. Predicates in Julia can be any expression yielding a Boolean
 result, thus enabling sophisticated set definitions through set operations.
-Additionally, SetBuilders offers features such as event handlers and
+Additionally, SetBuilders offers features such as set event and
 customizable set descriptions, greatly enhancing its utility.
+
+The following example demonstrates how to identify the set that fails the
+membership test among the sets in the set composition using set event and
+set description features.
+
+```julia
+# continues from the code example at the beginning of this page
+
+F = hist -> println(describe(hist[1].set, mark=hist[end].set))
+is_member(C, 1, on_notamember=F)
+```
+
+The value `1` is not a member of set `C` because the predicate of set `B`
+excludes it. The output from the previous code indicates that the "=>"
+mark correctly identifies set `B` as the reason for exclusion.
+
+```julia
+{ x ∈ A | 0 < x < 4 }, where
+    A = { x ∈ ::Integer }
+∩
+ => { x ∈ A | 1 < x < 5 }, where
+    A = { x ∈ ::Integer }
+```
+
+The function `is_member` serves a similar purpose to the membership operator,
+`in` or `∈`, but with additional keyword arguments. In the example,
+`on_notamember` accepts a function with one input argument, `hist`, and prints
+the output from the `describe` function, which details the structure of the
+first argument set. Optionally, the `describe` function accepts a `mark`
+keyword to indicate a specific set in the output. In this case, `hist[end].set`
+is the set that fails the membership test.
+
+For further details, please continue reading the following manual."
 
 ## Contents
 
