@@ -31,6 +31,20 @@ A = @setbuild(x ∈  I, 0 < x < 4) # creates a set with the predicate of "0 < x 
 @assert 3 ∈ C                    # => true, 3 is a member of the set C
 ```
 
+## Installation
+
+The package can be installed using the Julia package manager. From the Julia
+REPL, type ] to enter the Pkg REPL mode and run:
+
+```julia
+pkg> add SetBuilders
+```
+Alternatively, it can be installed via the Pkg API:
+
+```julia
+julia> import Pkg; Pkg.add("SetBuilders")
+```
+
 ## Sets in Mathematics
 
 Set theory, established by Georg Cantor in the late 19th century, is often

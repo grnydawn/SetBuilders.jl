@@ -19,7 +19,7 @@ In Julia, the `Any` type is a special type that sits at the top of the type
 hierarchy. With the `Any` type, `@setbuild` creates the universal set, which
 includes all objects in Julia.
 
-## Set from Julia Type
+## Set from Julia Types
 With Jula type, `@setbuild` creates a set that includes all instances
 of that type.
 
@@ -46,6 +46,8 @@ type, encompassing all subtypes of `Integer`, `AbstractFloat`,
 
 Note also that `@setbuild` can create sets from user-defined types.
 The set `S` includes all instances of the `MyStruct` type.
+
+![Sets from Julia types](assets/images/juliatypesets.png)
 
 ## Enumerated Set
 Similar to Julia's `Set` data structure, `@setbuild` can create a set from
@@ -117,26 +119,35 @@ With a Mapped Set, users can create a set using mappings from one set to
 another.
 
 ```julia
+O = @setbuild(x in H, z in I, z = x + 5, x = z - 5)
+```
+A "Mapped Set" should have at least four arguments.
+
+The first argument defines the source set, or domain in mathematical term,
+of a mapping. The mapping starts from the elements of the set `H`.
+
+The second argument defines the destination set , or codomain, of a mapping.
+The mapping arrives at the elements of the set `I`.
+
+The third argument defines a "forward" mapping from the source set (`H`, domain)
+to the destination set (`I`, codomain). The mapping at the third argument
+defines the way how to generated an element(or elements) in the codomain.
+
+The fourth argument defines a "backward" mapping from the destination set
+(`I`, codomain) to the source set (`H`, domain). The mapping at the fourth
+argument defines the way how to generated an element(or elements) in the
+domain.
+
+![Mapping in the set O](assets/images/mappedset.png)
+
+```julia
 function myfunc(x)
     x - 5
 end
 
-O = @setbuild(z in I, (x in H) -> x + 5, z -> z - 5)
-P = @setbuild(z in I, (x in J) -> x + 5, z -> func(z), func=myfunc)
-Q = @setbuild(z in S, (x in H, y in J) -> mystruct(x, y),
-                z -> (z.a, z.b), mystruct=MyStruct)
-```
-A "Mapped Set" should have at least three arguments. The first argument
-defines the target set, or codomain in mathematical terms. For example, the
-members of the set `O` (denoted as "z") comprise some members of the set `I`.
-
-The second argument defines a "forward" mapping from the starting set (domain)
-to the destination set (codomain). The arrow in the second argument indicates
-that it is a mapping. The left part of the arrow defines the domain; for the
-set `O`, the domain set is `H`. The right part of the arrow defines the
-instructions for generating members in the codomain.
-
-The third argument defines a "backward" mapping from the codomain to the domain.
+P = @setbuild(x in J, z in I, z = x + 5, x = func(z), func=myfunc)
+Q = @setbuild((x in H, y in J), z in S, z = mystruct(x, y),
+                (x, y) = (z.a, z.b), mystruct=MyStruct)
 
 The set `P` demonstrates how to use a function defined outside of `@setbuild`
 to create a mapping.
