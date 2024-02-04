@@ -28,7 +28,12 @@ object is a member of the set.
 ```julia
 I = @setbuild(Integer)           # creates a set from Julia Integer type
 A = @setbuild(x ∈  I, 0 < x < 4) # creates a set with the predicate of "0 < x < 4"
+B = @setbuild(x in I, 2 < x < 6) # creates a set with the predicate of "2 < x < 6"
+C = A ∩ B                        # creates an intersection with the two sets
+                                 # As an alternative, "C = intersection(A, B)" can be used
 @assert 3 ∈ C                    # => true, 3 is a member of the set C
+                                 # As an alternative, "3 in C" can be used
+@assert !(4 in C)                # => true, 4 is not a member of the set C
 ```
 
 ## Installation
