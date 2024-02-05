@@ -159,7 +159,7 @@ function create_cartesianset(setvars::Expr, env, meta) ::Expr
             end
         end
 
-        return :(SetBuilders.PredicateSet($setvars, true, $env, $meta))
+        return :(SetBuilders.PredicateSet($setvars, nothing, $env, $meta))
     else
         error("Syntax error: $setvars.")
     end

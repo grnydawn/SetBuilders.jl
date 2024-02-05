@@ -104,22 +104,22 @@ values, but not `Int32` or objects of other types.
 julia> A = @setbuild(Union{Int64, Float64}[1])
 EnumerableSet([{Float64}*0, {Int64}*1])
 
-julia> is_member(A, 1)
+julia> ismember(1, A)
 true
 
-julia> is_member(A, Int32(1))
+julia> ismember(Int32(1), A)
 false
 
 julia> push!(A, Float64(2.0))
 EnumerableSet([{Float64}*1, {Int64}*1])
 
-julia> is_member(A, Float64(2.0))
+julia> ismember(Float64(2.0), A)
 true
 
 julia> pop!(A, Float64(2.0))
 2.0
 
-julia> is_member(A, Float64(2.0))
+julia> ismember(Float64(2.0), A)
 false
 ```
 """
@@ -150,16 +150,16 @@ TypeSet(Integer)
 julia> A = @setbuild(x in I, 0 <= x < 10)
 PredicateSet((x ∈ TypeSet(Integer)) where 0 <= x < 10)
 
-julia> is_member(A, 0)  # 0 in A 
+julia> ismember(0, A)  # 0 in A 
 true
 
-julia> is_member(A, 10) # 10 in A
+julia> ismember(10, A) # 10 in A
 false
 ```
 """
 struct PredicateSet <: SBSet
     _vars::NTuple{N, Tuple{Union{Symbol, Nothing}, SBSet}} where N
-    _pred::Union{Bool, Symbol, Expr}
+    _pred::Union{Bool, Symbol, Expr, Nothing}
     _env ::Dict{Symbol, Any}
     _meta::Dict{Symbol, Any}
 end
@@ -203,10 +203,10 @@ julia> A = @setbuild(s in S, (x in I, y in I) -> mystruct(x,y), s -> (s.a, s.b),
                      mystruct=MyStruct)
 MappedSet((x ∈ TypeSet(Integer)), (y ∈ TypeSet(Integer)) -> (s ∈ TypeSet(MyStruct)))
 
-julia> is_member(A, MyStruct(1, 1))   # MyStruct(1, 1) in A
+julia> ismember(MyStruct(1, 1), A)   # MyStruct(1, 1) in A
 true
 
-julia> is_member(A, MyStruct(1.0, 1)) # MyStruct(1.0, 1) in A
+julia> ismember(MyStruct(1.0, 1), A) # MyStruct(1.0, 1) in A
 false
 ```
 """
@@ -246,10 +246,10 @@ PredicateSet((x ∈ TypeSet(Integer)) where 5 <= x < 15)
 julia> C = A ∩ B
 CompositeSet(PredicateSet((x ∈ TypeSet(Integer)) where 0 <= x < 10) ∩ PredicateSet((x ∈ TypeSet(Integer)) where 5 <= x < 15))
 
-julia> is_member(C, 5) # 5 in C
+julia> ismember(5, C) # 5 in C
 true
 
-julia> is_member(C, 0) # 0 in C
+julia> ismember(0, C) # 0 in C
 false
 ```
 """

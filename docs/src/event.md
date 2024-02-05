@@ -1,36 +1,86 @@
-# Membership Event
-This section introduces event handlers that activate in response to the
-outcomes of membership tests and their applications in different scenarios.
-For example, using 
+# Set Event
+SetBuilders provides users with the capability to register callback functions,
+so they can be called when an event occurs during operation.
+
+The situations in which an event occurs can vary. As of this writing,
+membership events are supported.
+
+## Membership events
+Membership events occur during membership check using `ismember` functions.
+
+Note that membership check operators of `in` or `∈` can not be used for event
+handling.
+
+## creating a callback function
+When an event occurs, SetBuilders makes a call to the registered callback
+function with one argument that is a vector of named tuple(:set and :elem).
+
+Let's start creating a callback function.
+
 ```julia
-julia> using SetBuilders
+function F1(history)
+    desc = describe(history[1].set, mark=history[end].set)
+    println("#############")
+    println("Not a Member")
+    println("-------------")
+    println(desc)
+    println("-------------")
+    println(", with an element of `$(history[end].elem)` at the set pointed by '=>'")
+    println("#############")
+end
+```
 
-julia> I = @setbuild(Integer)
-TypeSet(Integer)
+The function `P` takes one argument, `history`, which contains all the sets
+visited during the membership check and the elements used in these sets.
 
-julia> A = @setbuild(x ∈ I, 0 < x < 4)
-PredicateSet((x ∈ TypeSet(Integer)) where 0 < x < 4)
+The first item in the vector is the tuple of the set specified as the first
+argument and the value as the second argument of the `ismember` function.
 
-julia> B = @setbuild(x ∈ I, 1 < x < 5)
-PredicateSet((x ∈ TypeSet(Integer)) where 1 < x < 5)
+The last item in the vector is the tuple of the set and the element at the
+time the event occurred.
 
-julia> C = A ∩ B
-CompositeSet(PredicateSet((x ∈ TypeSet(Integer)) where 0 < x < 4) ∩ PredicateSet((x ∈ TypeSet(Integer)) where 1 < x < 5))
+To illustrate, we used the `describe` function with the `mark` keyword argument
+to mark the last visited set where the event occurred. See
+[Marking a set in description](@ref) for an explanation of how to use the
+`mark` keyword argument in the `describe` function.
 
-julia> F = hist -> println(describe(hist[1].set, mark=hist[end].set))
-#1 (generic function with 1 method)
+Once a callback function is created, registering it to the `ismember`
+function is straightforward.
 
-julia> is_member(C, 1, on_notamember=F)
+```julia
+I = @setbuild(Integer)
+P1 = @setbuild(x in I, 0 <= x < 10)
+M1 = @setbuild(x in P1, z in I, z = x + 5, x = z - 5)
+
+ismember(0, M1, on_notamember=F1)
+```
+To register a membership failure event, we used the `on_notamember` keyword
+argument. In the case of a membership success event, `on_member` is used.
+
+The previous example produces:
+
+```julia
+#############
+Not a Member
+-------------
+
+{ x ∈ A }
+         /\ B-MAP
+      || ||
+F-MAP \/
+{ z ∈ B }, where
+ => A = { x ∈ A.A | 0 <= x < 10 }, where
+        A.A = { x ∈ ::Integer }
+    F-MAP: z = x + 5
+    B-MAP: x = z - 5
+    B = { x ∈ ::Integer }
+-------------
+, with an element of `-5` at the set pointed by '=>'
+#############
 false
 ```
+The output shows that the membership test failed at set `A`, originally named
+`P1`, because the value `-5` is not a member of set `P1`.
 
-displays the details of set C's construction, pinpointing the specific
-set that failed the membership test.
-
-```julia
-{ x ∈ A | 0 < x < 4 }, where
-    A = { x ∈ ::Integer }
-∩
- => { x ∈ A | 1 < x < 5 }, where
-    A = { x ∈ ::Integer }
-```
+The value `-5` was calculated using `B-MAP` from the original argument value of
+`0` to `-5`, using the formula `x = z - 5`.

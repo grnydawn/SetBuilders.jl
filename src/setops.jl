@@ -125,22 +125,22 @@ end
 julia> A = @setbuild(Union{Int64, Float64}[1])
 EnumerableSet([{Float64}*0, {Int64}*1])
 
-julia> is_member(A, 1)
+julia> ismember(1, A)
 true
 
-julia> is_member(A, Int32(1))
+julia> ismember(Int32(1), A)
 false
 
 julia> push!(A, Float64(2.0))
 EnumerableSet([{Float64}*1, {Int64}*1])
 
-julia> is_member(A, Float64(2.0))
+julia> ismember(Float64(2.0), A)
 true
 
 julia> pop!(A, Float64(2.0))
 2.0
 
-julia> is_member(A, Float64(2.0))
+julia> ismember(Float64(2.0), A)
 false
 ```
 """
@@ -156,22 +156,22 @@ Base.push!(set::EnumerableSet, elems...)    = do_push!(set, elems...)
 julia> A = @setbuild(Union{Int64, Float64}[1])
 EnumerableSet([{Float64}*0, {Int64}*1])
 
-julia> is_member(A, 1)
+julia> ismember(1, A)
 true
 
-julia> is_member(A, Int32(1))
+julia> ismember(Int32(1), A)
 false
 
 julia> push!(A, Float64(2.0))
 EnumerableSet([{Float64}*1, {Int64}*1])
 
-julia> is_member(A, Float64(2.0))
+julia> ismember(Float64(2.0), A)
 true
 
 julia> pop!(A, Float64(2.0))
 2.0
 
-julia> is_member(A, Float64(2.0))
+julia> ismember(Float64(2.0), A)
 false
 ```
 """

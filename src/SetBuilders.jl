@@ -3,7 +3,7 @@ Main module for `SetBuilders.jl` -- predicate-based set generation package for J
 """
 module SetBuilders
 
-export SBSet, @setbuild, @setpkg, complement, is_member
+export SBSet, @setbuild, @setpkg, complement, ismember
 export forward_map, backward_map, describe
 
 include("utils.jl")

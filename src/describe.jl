@@ -79,7 +79,7 @@ function describe(set::EnumerableSet; prepend="", prefix="", depth=0,
 
     limit >= 0 && depth > limit && return ""
 
-    types = ["::$t" for t in keys(set._elems)]
+    types = ["::$k*$(length(v))" for (k, v) in set._elems]
     tnames = join(types, ", ")
 
     mstr = get_mark(set, mark)
@@ -89,7 +89,7 @@ function describe(set::EnumerableSet; prepend="", prefix="", depth=0,
         return tabs * prepend * "\"$(set._meta[:sb_set_desc])\""
     else
         return tabs * prepend * (length(types) > 1 ?
-                                "{ x ∈ ($tnames,) }" : "{ x ∈ $tnames }")
+                                "{ x ∈ ($tnames) }" : "{ x ∈ $tnames }")
     end
 end
 
@@ -141,7 +141,13 @@ function describe(set::PredicateSet; prepend="", prefix="", depth=0,
         push!(lines, tabs*prepend*"\"$(set._meta[:sb_set_desc]))\"")
     else
         setvar = join(["$v ∈ $s" for (v, s) in zip(vars, names)], ", ")
-        push!(lines, tabs*prepend*"{ $setvar | $(set._pred) }")
+
+        if set._pred isa Nothing
+            push!(lines, tabs*prepend*"{ $setvar }")
+
+        else
+            push!(lines, tabs*prepend*"{ $setvar | $(set._pred) }")
+        end
 
     end
 

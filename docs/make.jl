@@ -24,7 +24,6 @@ makedocs(;
         "SetBuilders Documentation" => "index.md",
         "Manual" => [
             "creation.md",
-            "membership.md",
             "operations.md",
             "description.md",
             "event.md",

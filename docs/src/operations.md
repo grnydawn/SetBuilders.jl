@@ -2,58 +2,91 @@
 SetBuilders sets support conventional set operations including union,
 intersection, difference, symmetric difference, and complement.
 
-The first argument of the `all` function in the examples is an anonymous
-function that is applied to all items in the last argument.
+All of the `@assert` checks in this page should pass.
 
-All of the following `@assert` checks should pass.
+To support examples in this page, the following sets are pre-built.
+To learn how to use `@setbuild` for the following set creations,
+see [Set Creation](@ref).
+
+```julia
+I = @setbuild(Integer)
+A = @setbuild(x in I, 0 <= x < 10)
+B = @setbuild(x in I, 5 <= x < 15)
+X = @setbuild(Union{Int64, Int32}[Int32(-1), Int32(1), 2])
+```
+
+## Union
+
+The function `union` or the set operator `∪` performs set union.
+
+```julia
+@assert 0 in union(A, B)    # 0 is a member of set A
+@assert 14 in A ∪ B         # 14 is a member of set B
+@assert !(-1 in A ∪ B)      # -1 is not a member of either set A or set B
+```
+
+!!! note
+    The number of set arguments can be more than two. For example,
+    union(A, B, X) is allowed. "A ∪ B ∪ X" is same to "union(A, B, X)".
+
+    This applies to other set operations including intersection, set
+    difference, and set symmetric difference.
+
+## Intersection
+
+The function `intersect` or the set operator `∩` performs set intersection.
+
+```julia
+@assert 5 in intersect(A, B)    # 5 is a member of both set A and set B
+@assert 9 in A ∩ B              # 9 is a member of both set A and set B
+@assert !(0 in A ∩ B)           # 0 is a member of set A, but not of set B
+```
+
+## Difference
+
+The function `setdiff` or the set operator `-` performs set difference.
+
+```julia
+@assert 0 in setdiff(A, B)      # 0 is a member of set A, but not of set B
+@assert 4 in A - B              # 4 is a member of set A, but not of set B
+@assert !(5 in A - B)           # 5 is a member of both set A and set B
+```
+
+## Symmetric Difference
+
+The function `symdiff` performs set symmetric difference.
+
+```julia
+@assert 0  in symdiff(A, B)     # 0 is a member of set A, but not of set B
+@assert 10 in symdiff(A, B)     # 10 is a member of set B, but not of set A
+@assert !(5 in symdiff(A, B))   # 5 is a member of both set A and set B
+```
+
+!!! note
+    Where there are more than two set arguments, symmetric difference operation
+    is applied as binary operation with previous operation result. For example,
+    symdiff(A, B, X) is evaluated as "(symdiff(symdiff(A, B), X)".
+
+## Complement
+
+The function `complement` or the set operator `~` performs set complement.
+
+A = @setbuild(x in I, 0 <= x < 10)
+```julia
+@assert 10 in complement(A)     # 10 is not a member of set A
+!assert !(1 in ~A)              # 1 is a member of set A
+@assert 1 in ~complement(A)     # double complements cancel each other out
+```
+
+Also, note that the complement of the EmptySet is the UniversalSet, and
+vice versa.
+
 ```julia
 E = @setbuild()
 U = @setbuild(Any)
-
-@assert all(x -> !(x in E), (0, 1))
-@assert all(x -> x in U, (0, 1))
 
 @assert complement(E) == U
 @assert complement(U) == E
 @assert ~U == E
 @assert ~E == U
-
-I = @setbuild(Integer)
-A = @setbuild(x in I, 0 <= x < 10)
-B = @setbuild(x in I, 5 <= x < 15)
-X = @setbuild(Union{Int64, Int32}[Int32(-1), Int32(1), 2])
-
-@assert all(x -> x in A, 0:9)
-@assert all(x -> x ∈ A, 0:9)
-@assert all(x -> !(x in A), (-1, 10))
-
-@assert all(x -> x in union(A, B), 0:14)
-@assert all(x -> x in A ∪ B, 0:14)
-@assert all(x -> !(x in union(A, B)), (-1, 15))
-@assert all(x -> x in union(A, U), -1:15)
-@assert all(x -> x in A ∪ ~E, -1:15)
-@assert all(x -> x in union(A, E), 0:9)
-
-@assert all(x -> x in intersect(A, B), 5:9)
-@assert all(x -> x ∈ A ∩ B, 5:9)
-@assert all(x -> !(x in intersect(A, B)), 0:4)
-@assert all(x -> x in intersect(A, U), 0:9)
-@assert all(x -> !(x in intersect(A, E)), -1:15)
-
-@assert all(x -> x in setdiff(A, B), 0:4)
-@assert all(x -> x in A - B, 0:4)
-@assert all(x -> !(x in setdiff(A, B)), 5:9)
-@assert all(x -> !(x in setdiff(A, U)), -1:15)
-@assert all(x -> x in setdiff(U, A), 10:14)
-@assert all(x -> x in ~E - A, 10:14)
-@assert all(x -> x in setdiff(A, E), 0:9)
-@assert all(x -> !(x in setdiff(E, A)), -1:15)
-
-@assert all(x -> x in symdiff(A, B), [0:4; 10:14])
-@assert all(x -> !(x in symdiff(A, B)), 5:9)
-@assert all(x -> !(x in symdiff(A, U)), 0:9)
-@assert all(x -> x in symdiff(A, E), 0:9)
-
-@assert all(x -> x in A ∪ X, [Int32(i) for i in -1:9])
-@assert all(x -> !(x in A ∩ X), [0, 1])
 ```

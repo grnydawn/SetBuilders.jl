@@ -5,18 +5,18 @@
 ## Empty set
 #E = @setbuild()
 @test !(1 in E)
-@test !is_member(E, 1)
+@test !ismember(1, E)
 
 ## Universal set
 #U = @setbuild(Any)
 @test 1 in U
-@test is_member(U, 1)
+@test ismember(1, U)
 
 ## sets from Julia types
 #I = @setbuild(Integer)
 @test 1 in I
 @test !(1.0 in I)
-@test is_member(I, 1)
+@test ismember(1, I)
 
 #Q = @setbuild(Rational)
 @test 1//2 in Q
@@ -49,13 +49,13 @@
 @test 1 in G 
 @test 1.0 in G 
 @test !(Float32(1) in G)
-@test is_member(G, 1.0)
+@test ismember(1.0, G)
 
 ## Enumerable sets
 #ENUM1 = @setbuild([1, 2, 3])
 @test 1 in ENUM1 
 @test !(4 in ENUM1)
-@test is_member(ENUM1, 1)
+@test ismember(1, ENUM1)
 
 #ENUM2 = @setbuild(Int64[value, 2])
 @test value in ENUM2 
@@ -84,7 +84,7 @@ push!(ENUM4, d1)
 @test (1, 1) in CART1
 @test !(1 in CART1)
 @test !((1.0, 1.0) in CART1)
-@test is_member(CART1, (1, 1))
+@test ismember((1, 1), CART1)
 
 #CART2 = @setbuild((x in I, I))
 @test (1, 1) in CART2
@@ -117,7 +117,7 @@ push!(ENUM4, d1)
 #PRED3 = @setbuild(x in I, 0 <= x < 10)
 @test 0 in PRED3
 @test !(10 in PRED3)
-@test is_member(PRED3, 0)
+@test ismember(0, PRED3)
 
 #PRED4 = @setbuild(x in I, 5 <= x < 15)
 @test 5 in PRED4
@@ -144,7 +144,7 @@ push!(ENUM4, d1)
 #MAPD1 = @setbuild(x in PRED3, z in I, z = x + 5, x = z - 5)
 @test 5 in MAPD1
 @test !(0 in MAPD1)
-@test is_member(MAPD1, 5)
+@test ismember(5, MAPD1)
 
 #MAPD2 = @setbuild(x in PRED4, z in I, z = x + 5, x = func(z), func=myfunc)
 @test 10 in MAPD2

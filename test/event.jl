@@ -12,21 +12,21 @@
 
 P1 = hist -> (@test describe(hist[1].set, mark=hist[end].set) == raw"""
 => { x ∈ ::Integer }""")
-@test  is_member(I, 1, on_member=P1)
+@test  ismember(1, I, on_member=P1)
 
 F2 = hist -> (@test describe(hist[1].set, mark=hist[end].set) == raw"""
 => { x ∈ ::Integer }""")
-@test  !is_member(I, 0.1, on_notamember=F2)
+@test  !ismember(0.1, I, on_notamember=F2)
 
 P3 = hist -> (@test describe(hist[1].set, mark=hist[end].set) == raw"""
 => { x ∈ A | 0 <= x < 10 }, where
     A = { x ∈ ::Integer }""")
-@test  is_member(PRED3, 1, on_member=P3)
+@test  ismember(1, PRED3, on_member=P3)
 
 F4 = hist -> (@test describe(hist[1].set, mark=hist[end].set) == raw"""
 { x ∈ A | 0 <= x < 10 }, where
  => A = { x ∈ ::Integer }""")
-@test  !is_member(PRED3, 0.1, on_notamember=F4)
+@test  !ismember(0.1, PRED3, on_notamember=F4)
 
 C = PRED3 ∩ PRED4
 
@@ -36,7 +36,7 @@ P5 = hist -> (@test describe(hist[1].set, mark=hist[end].set) == raw"""
 => ∩
 { x ∈ A | 5 <= x < 15 }, where
     A = { x ∈ ::Integer }""")
-@test  is_member(C, 5, on_member=P5)
+@test  ismember(5, C, on_member=P5)
 
 
 F6 = hist -> (@test describe(hist[1].set, mark=hist[end].set) == raw"""
@@ -45,7 +45,7 @@ F6 = hist -> (@test describe(hist[1].set, mark=hist[end].set) == raw"""
 ∩
 => { x ∈ A | 5 <= x < 15 }, where
     A = { x ∈ ::Integer }""")
-@test  !is_member(C, 4, on_notamember=F6)
+@test  !ismember(4, C, on_notamember=F6)
 
 P7 = hist -> (@test describe(hist[1].set, mark=hist[end].set) == raw"""
 => 
@@ -60,7 +60,7 @@ P7 = hist -> (@test describe(hist[1].set, mark=hist[end].set) == raw"""
  => B-MAP: x = z - 5
     B = { x ∈ ::Integer }""")
 
-@test is_member(MAPD1, 5, on_member=P7)
+@test ismember(5, MAPD1, on_member=P7)
 
 F8 = hist -> (@test describe(hist[1].set, mark=hist[end].set) == raw"""
 
@@ -75,7 +75,7 @@ F-MAP \/
     B-MAP: x = z - 5
     B = { x ∈ ::Integer }""")
 
-@test !is_member(MAPD1, 4, on_notamember=F8)
+@test !ismember(4, MAPD1, on_notamember=F8)
 
 F9 = hist -> (@test describe(hist[1].set, mark=hist[end].set) == raw"""
 
@@ -90,4 +90,4 @@ F-MAP \/
     B-MAP: x = z - 5
  => B = { x ∈ ::Integer }""")
 
-@test !is_member(MAPD1, 0.1, on_notamember=F9)
+@test !ismember(0.1, MAPD1, on_notamember=F9)

@@ -107,7 +107,7 @@ customizable set descriptions, greatly enhancing its utility.
 # continues from the code example at the beginning of this page
 
 F = hist -> println(describe(hist[1].set, mark=hist[end].set))
-is_member(C, 1, on_notamember=F)
+ismember(1, C, on_notamember=F)
 ```
 
 The above example demonstrates how to identify the set that fails the
@@ -126,7 +126,7 @@ the "=>" mark correctly identifies set `B` as the reason for exclusion.
     A = { x ∈ ::Integer }
 ```
 
-The function `is_member` serves a similar purpose to the membership operator,
+The function `ismember` serves a same purpose to the membership operator,
 `in` or `∈`, but with additional keyword arguments. In the example,
 `on_notamember` accepts a function with one input argument, `hist`, and prints
 the output from the `describe` function, which details the structure of the
@@ -139,11 +139,10 @@ For further details, please continue reading the following manual.
 ## Contents
 
 * [Set Creation](@ref): explains how to use `@setbuild` macro for building various types of sets.
-* [Set Membership](@ref): shows examples of using `is_member` set membership function.
 * [Set Operations](@ref): shows examples of using set operations.
 * [Set Description](@ref): explains how to generate set descriptions.
-* [Membership Event](@ref): explains how to use membership event handlers.
-* [Element Mappings](@ref): explains how to generate set elements from Mapped sets.
+* [Set Event](@ref): explains how to use set event with a callback function
+* [Set Element Generation](@ref): explains how to generate set elements from Mapped sets.
 * [Set Sharing](@ref): explains how to create/use/share a Julia module for sets
 * [Reference](@ref): provides reference manual for using SetBuilders.
 * [Developer Documentaion](@ref): explains how to extend SetBuilders.

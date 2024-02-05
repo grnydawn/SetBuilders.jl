@@ -37,7 +37,7 @@ S = @setbuild(MyStruct)
 @assert MyStruct(1,2) in S
 @assert !(1 in S)
 
-# Enumeratable sets
+# Enumerable sets
 A = @setbuild([1, 2, 3])
 @assert 1 in A
 @assert !(4 in A)

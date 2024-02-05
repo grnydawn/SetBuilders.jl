@@ -31,47 +31,47 @@
 
 ## Enumerable sets
 #ENUM1 = @setbuild([1, 2, 3])
-@test describe(ENUM1) == "{ x ∈ ::Int64 }"
+@test describe(ENUM1) == "{ x ∈ ::Int64*3 }"
 
 #ENUM2 = @setbuild(Int64[value, 2])
-@test describe(ENUM2) == "{ x ∈ ::Int64 }"
+@test describe(ENUM2) == "{ x ∈ ::Int64*2 }"
 
 #ENUM3 = @setbuild(Union{Int64, Float64}[1, 2, 3.0])
-@test (describe(ENUM3) == "{ x ∈ (::Float64, ::Int64,) }" ||
-       describe(ENUM3) == "{ x ∈ (::Int64, ::Float64,) }")
+@test (describe(ENUM3) == "{ x ∈ (::Float64*1, ::Int64*2) }" ||
+       describe(ENUM3) == "{ x ∈ (::Int64*2, ::Float64*1) }")
 
 #ENUM4 = @setbuild(Dict{String, String}[])
-@test describe(ENUM4) == "{ x ∈ ::Dict{String, String} }"
+@test describe(ENUM4) == "{ x ∈ ::Dict{String, String}*1 }"
 
 ## Cartesian sets
 #CART1 = @setbuild((I, I))
 @test describe(CART1) == """
-{ c1 ∈ A, c2 ∈ B | true }, where
+{ c1 ∈ A, c2 ∈ B }, where
     A = { x ∈ ::Integer }
     B = { x ∈ ::Integer }"""
 
 #CART2 = @setbuild((x in I, I))
 @test describe(CART2) == """
-{ x ∈ A, c1 ∈ B | true }, where
+{ x ∈ A, c1 ∈ B }, where
     A = { x ∈ ::Integer }
     B = { x ∈ ::Integer }"""
 
 #CART3 = @setbuild((x, y) in I)
 @test describe(CART3) == """
-{ x ∈ A, y ∈ B | true }, where
+{ x ∈ A, y ∈ B }, where
     A = { x ∈ ::Integer }
     B = { x ∈ ::Integer }"""
 
 #CART4 = @setbuild(((x, y) in I, z in I))
 @test describe(CART4) == """
-{ x ∈ A, y ∈ B, z ∈ C | true }, where
+{ x ∈ A, y ∈ B, z ∈ C }, where
     A = { x ∈ ::Integer }
     B = { x ∈ ::Integer }
     C = { x ∈ ::Integer }"""
 
 #CART5 = @setbuild((I^3, z in I))
 @test describe(CART5) == """
-{ c1 ∈ A, c2 ∈ B, c3 ∈ C, z ∈ D | true }, where
+{ c1 ∈ A, c2 ∈ B, c3 ∈ C, z ∈ D }, where
     A = { x ∈ ::Integer }
     B = { x ∈ ::Integer }
     C = { x ∈ ::Integer }

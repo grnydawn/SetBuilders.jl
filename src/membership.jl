@@ -57,18 +57,18 @@ function _check_member(e, d, h, kwargs)
 
     if length(d) == 1
         if haskey(kwargs, :_imhist_)
-            return is_member(d[1][2], e; kwargs...)
+            return ismember(e, d[1][2]; kwargs...)
 
         else
-            return is_member(d[1][2], e; _imhist_=h, kwargs...)
+            return ismember(e, d[1][2]; _imhist_=h, kwargs...)
         end
     else
         for (_e, _d) in zip(e, d)
             if haskey(kwargs, :_imhist_)
-                is_member(_d[2], _e; kwargs...) || return false
+                ismember(_e, _d[2]; kwargs...) || return false
 
             else
-                (is_member(_d[2], _e; _imhist_=h, kwargs...) ||
+                (ismember(_e, _d[2]; _imhist_=h, kwargs...) ||
                     return false)
             end
         end
@@ -526,7 +526,7 @@ end
 #end
 
 """
-    is_member(set::EnumerableSet, elem; kwargs...)
+    ismember(elem, set::EnumerableSet; kwargs...)
 
 Check if `elem` is a member of `set`
 
@@ -535,26 +535,26 @@ Check if `elem` is a member of `set`
 julia> A = @setbuild(Union{Int64, Float64}[1])
 EnumerableSet([{Float64}*0, {Int64}*1])
 
-julia> is_member(A, 1)
+julia> ismember(1, A)
 true
 
-julia> is_member(A, Int32(1))
+julia> ismember(Int32(1), A)
 false
 
 julia> push!(A, Float64(2.0))
 EnumerableSet([{Float64}*1, {Int64}*1])
 
-julia> is_member(A, Float64(2.0))
+julia> ismember(Float64(2.0), A)
 true
 
 julia> pop!(A, Float64(2.0))
 2.0
 
-julia> is_member(A, Float64(2.0))
+julia> ismember(Float64(2.0), A)
 false
 ```
 """
-function is_member(set::EnumerableSet, elem; kwargs...)
+function ismember(elem, set::EnumerableSet; kwargs...)
 
     hist = get(kwargs, :_imhist_, [])
     push!(hist, (set = set, elem = elem))
@@ -572,7 +572,7 @@ function is_member(set::EnumerableSet, elem; kwargs...)
 end
 
 """
-    is_member(set::PredicateSet, elem; kwargs...)
+    ismember(elem, set::PredicateSet; kwargs...)
 
 Check if `elem` is a member of `set`
 
@@ -584,14 +584,14 @@ TypeSet(Integer)
 julia> A = @setbuild(x in I, 0 <= x < 10)
 PredicateSet((x ∈ TypeSet(Integer)) where 0 <= x < 10)
 
-julia> is_member(A, 0)  # 0 in A 
+julia> ismember(0, A)  # 0 in A 
 true
 
-julia> is_member(A, 10) # 10 in A
+julia> ismember(10, A) # 10 in A
 false
 ```
 """
-function is_member(set::PredicateSet, elem; kwargs...) :: Bool
+function ismember(elem, set::PredicateSet; kwargs...) :: Bool
 
     hist = get(kwargs, :_imhist_, [])
     push!(hist, (set = set, elem = elem))
@@ -599,9 +599,9 @@ function is_member(set::PredicateSet, elem; kwargs...) :: Bool
     if length(set._vars) == 1
 
         if haskey(kwargs, :_imhist_)
-            res = is_member(set._vars[1][2], elem; kwargs...)
+            res = ismember(elem, set._vars[1][2]; kwargs...)
         else
-            res = is_member(set._vars[1][2], elem; _imhist_=hist, kwargs...)
+            res = ismember(elem, set._vars[1][2]; _imhist_=hist, kwargs...)
         end
 
         res == false && return _event(set, :member, res, hist, kwargs)
@@ -609,6 +609,10 @@ function is_member(set::PredicateSet, elem; kwargs...) :: Bool
         if set._pred isa Bool
             push!(hist, (set = set, elem = elem))
             return _event(set, :member, set._pred, hist, kwargs)
+
+        elseif set._pred isa Nothing
+            push!(hist, (set = set, elem = elem))
+            return _event(set, :member, true, hist, kwargs)
 
         else
             varmap = Dict{Symbol, Any}(set._vars[1][1] => elem)
@@ -628,9 +632,9 @@ function is_member(set::PredicateSet, elem; kwargs...) :: Bool
         for ((v, s), e) in zip(set._vars, elem)
 
             if haskey(kwargs, :_imhist_)
-                res = is_member(s, e; kwargs...)
+                res = ismember(e, s; kwargs...)
             else
-                res = is_member(s, e; _imhist_=hist, kwargs...)
+                res = ismember(e, s; _imhist_=hist, kwargs...)
             end
 
             res == false && return _event(set, :member, res, hist, kwargs)
@@ -645,6 +649,9 @@ function is_member(set::PredicateSet, elem; kwargs...) :: Bool
         if set._pred isa Bool
             return _event(set, :member, set._pred, hist, kwargs)
 
+        elseif set._pred isa Nothing
+            return _event(set, :member, true, hist, kwargs)
+
         else
             return _event(set, :member, sb_eval(set._pred,
                             merge(varmap, set._env)), hist, kwargs)
@@ -656,7 +663,7 @@ function is_member(set::PredicateSet, elem; kwargs...) :: Bool
 end
 
 """
-    is_member(set::MappedSet, elem; kwargs...)
+    ismember(elem, set::MappedSet; kwargs...)
 
 Check if `elem` is a member of `set`
 
@@ -677,14 +684,14 @@ julia> A = @setbuild(s in S, (x in I, y in I) -> mystruct(x,y), s -> (s.a, s.b),
                      mystruct=MyStruct)
 MappedSet((x ∈ TypeSet(Integer)), (y ∈ TypeSet(Integer)) -> (s ∈ TypeSet(MyStruct)))
 
-julia> is_member(A, MyStruct(1, 1))   # MyStruct(1, 1) in A
+julia> ismember(MyStruct(1, 1), A)   # MyStruct(1, 1) in A
 true
 
-julia> is_member(A, MyStruct(1.0, 1)) # MyStruct(1.0, 1) in A
+julia> ismember(MyStruct(1.0, 1), A) # MyStruct(1.0, 1) in A
 false
 ```
 """
-function is_member(set::MappedSet, coelem; kwargs...)
+function ismember(coelem, set::MappedSet; kwargs...)
 
     hist = get(kwargs, :_imhist_, [])
     push!(hist, (set = set, elem = coelem))
@@ -716,7 +723,7 @@ function is_member(set::MappedSet, coelem; kwargs...)
 end
 
 """
-    is_member(set::CompositeSet, elem; kwargs...)
+    ismember(elem, set::CompositeSet; kwargs...)
 
 Check if `elem` is a member of `set`
 
@@ -734,14 +741,14 @@ PredicateSet((x ∈ TypeSet(Integer)) where 5 <= x < 15)
 julia> C = A ∩ B
 CompositeSet(PredicateSet((x ∈ TypeSet(Integer)) where 0 <= x < 10) ∩ PredicateSet((x ∈ TypeSet(Integer)) where 5 <= x < 15))
 
-julia> is_member(C, 5) # 5 in C
+julia> ismember(5, C) # 5 in C
 true
 
-julia> is_member(C, 0) # 0 in C
+julia> ismember(0, C) # 0 in C
 false
 ```
 """
-function is_member(set::CompositeSet, elem; kwargs...)
+function ismember(elem, set::CompositeSet; kwargs...)
 
     hist = get(kwargs, :_imhist_, [])
     push!(hist, (set = set, elem = elem))
@@ -752,9 +759,9 @@ function is_member(set::CompositeSet, elem; kwargs...)
 
     if set._op == :union
         if haskey(kwargs, :_imhist_)
-            res = any(s -> is_member(s, elem; kwargs...), set._sets)
+            res = any(s -> ismember(elem, s; kwargs...), set._sets)
         else
-            res = any(s -> is_member(s, elem; _imhist_=hist,
+            res = any(s -> ismember(elem, s; _imhist_=hist,
                         kwargs...), set._sets)
         end
 
@@ -762,9 +769,9 @@ function is_member(set::CompositeSet, elem; kwargs...)
 
     elseif set._op == :intersect
         if haskey(kwargs, :_imhist_)
-            _res = any(s -> !is_member(s, elem; kwargs...), set._sets)
+            _res = any(s -> !ismember(elem, s; kwargs...), set._sets)
         else
-            _res = any(s -> !is_member(s, elem; _imhist_=hist,
+            _res = any(s -> !ismember(elem, s, ; _imhist_=hist,
                         kwargs...), set._sets)
         end
         res = !_res
@@ -774,11 +781,11 @@ function is_member(set::CompositeSet, elem; kwargs...)
     elseif set._op == :setdiff
 
         if haskey(kwargs, :_imhist_)
-            _res = (!is_member(set._sets[1], elem; kwargs...) ||
-                any(s -> is_member(s, elem; kwargs...), set._sets[2:end]))
+            _res = (!ismember(elem, set._sets[1]; kwargs...) ||
+                any(s -> ismember(elem, s; kwargs...), set._sets[2:end]))
         else
-            _res = (!is_member(set._sets[1], elem; _imhist_=hist, kwargs...) ||
-                    any(s -> is_member(s, elem; _imhist_=hist,
+            _res = (!ismember(elem, set._sets[1]; _imhist_=hist, kwargs...) ||
+                    any(s -> ismember(elem, s; _imhist_=hist,
                                         kwargs...), set._sets[2:end]))
         end
 
@@ -794,9 +801,9 @@ function is_member(set::CompositeSet, elem; kwargs...)
         end
 
         if haskey(kwargs, :_imhist_)
-            res = is_member(work_set, elem; kwargs...)
+            res = ismember(elem, work_set; kwargs...)
         else
-            res = is_member(work_set, elem; _imhist_=hist, kwargs...)
+            res = ismember(elem, work_set; _imhist_=hist, kwargs...)
         end
 
         push!(hist, (set = set, elem = elem))
@@ -810,7 +817,7 @@ function is_member(set::CompositeSet, elem; kwargs...)
 end
 
 """
-    is_member(set::TypeSet, elem; kwargs...)
+    ismember(elem, set::TypeSet; kwargs...)
 
 Check if `elem` is a member of `set`
 
@@ -819,14 +826,14 @@ Check if `elem` is a member of `set`
 julia> I = @setbuild(Integer)
 TypeSet(Integer)
 
-julia> is_member(I, 1)   # 1 in I
+julia> ismember(1, I)   # 1 in I
 true
 
-julia> is_member(I, 0.1) # 0.1 in I
+julia> ismember(0.1, I) # 0.1 in I
 false
 ```
 """
-function is_member(set::TypeSet, elem; kwargs...)
+function ismember(elem, set::TypeSet; kwargs...)
 
     hist = get(kwargs, :_imhist_, [])
     push!(hist, (set = set, elem = elem))
@@ -835,7 +842,7 @@ function is_member(set::TypeSet, elem; kwargs...)
 end
 
 """
-    is_member(set::UniversalSet, elem; kwargs...)
+    ismember(elem, set::UniversalSet; kwargs...)
 
 Check if `elem` is a member of `set`
 
@@ -844,14 +851,14 @@ Check if `elem` is a member of `set`
 julia> U = @setbuild(Any)
 UniversalSet()
 
-julia> is_member(U, 1)   # 1 in U
+julia> ismember(1, U)   # 1 in U
 true
 
-julia> is_member(U, 0.1) # 0.1 in U
+julia> ismember(0.1, U) # 0.1 in U
 true
 ```
 """
-function is_member(set::UniversalSet, elem; kwargs...)
+function ismember(elem, set::UniversalSet; kwargs...)
 
     hist = get(kwargs, :_imhist_, [])
     push!(hist, (set = set, elem = elem))
@@ -860,7 +867,7 @@ function is_member(set::UniversalSet, elem; kwargs...)
 end
 
 """
-    is_member(set::EmptySet, elem; kwargs...)
+    ismember(elem, set::EmptySet; kwargs...)
 
 Check if `elem` is a member of `set`
 
@@ -869,14 +876,14 @@ Check if `elem` is a member of `set`
 julia> E = @setbuild()
 EmptySet()
 
-julia> is_member(E, 1)   # 1 in E
+julia> ismember(1, E)   # 1 in E
 false
 
-julia> is_member(E, 0.1) # 0.1 in E
+julia> ismember(0.1, E) # 0.1 in E
 false
 ```
 """
-function is_member(set::EmptySet, elem; kwargs...)
+function ismember(elem, set::EmptySet; kwargs...)
 
     hist = get(kwargs, :_imhist_, [])
     push!(hist, (set = set, elem = elem))
@@ -894,14 +901,14 @@ Check if `elem` is a member of `set`
 julia> I = @setbuild(Integer)
 TypeSet(Integer)
 
-julia> 1 in I   # is_member(I, 1)
+julia> 1 in I   # ismember(1, I)
 true
 
-julia> 0.1 in I # is_member(I, 0.1)
+julia> 0.1 in I # ismember(0.1, I)
 false
 ```
 """
-Base.:in(e, set::SBSet)         = is_member(set, e)
+Base.:in(e, set::SBSet)         = ismember(e, set)
 
 Base.:in(e, set::EmptySet)      = false
 Base.:in(e, set::UniversalSet)  = true
