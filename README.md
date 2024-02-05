@@ -56,6 +56,12 @@ Alternatively, it can be installed via the Pkg API:
 julia> import Pkg; Pkg.add("SetBuilders")
 ```
 
+Once installed, the SetBuilders package can be loaded with using SetBuilders.
+
+```julia
+using SetBuilders
+```
+
 ## Documentation
 
 In addition to set creations, set operations, and membership tests shown in the

@@ -6,12 +6,6 @@
 #PRED5 = @setbuild((x in PRED3, y in PRED4), x < 5 && y > 10)
 #S = @setbuild(MyStruct)
 
-
-
-
-
-
-
 # Mapped sets
 #MAPD1 = @setbuild(x in PRED3, z in I, z = x + 5, x = z - 5)
 @test forward_map(MAPD1, [0, 9]) == [5, 14]
@@ -48,7 +42,6 @@
 @test forward_map(MAPD6, [(0, 9)]) == [MyStruct(0, 9)]
 # TODO: fix the following issue
 @test backward_map(MAPD6, MyStruct(0, 9)) == [(0, 9), (9, 0)]
-#@test backward_map(MAPD6, MyStruct(0, 9)) == [(0, 9), (9, 9), (0, 0), (9, 0)]
 
 #MAPD7 = @setbuild(x in I, y in I, (y = x + 1, 0 <= y < 10),
 #                    (x = y - 1, 0 <= x < 10))

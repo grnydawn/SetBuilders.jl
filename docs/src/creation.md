@@ -23,7 +23,7 @@ any elements. All membership tests with EmptySet returns Boolean `false`.
 
 In Julia, the `Any` type is a special type that sits at the top of the type
 hierarchy. With the `Any` type, `@setbuild` creates the universal set, which
-includes all objects in Julia. All membership tests with EmptySet returns
+includes all objects in Julia. All membership tests with UniversalSet returns
 Boolean `true`.
 
 ## Set from Julia Types
@@ -33,8 +33,8 @@ of that type.
 ```julia
 I = @setbuild(Integer)
 
-@assert 1 in I              # 1 is one instance of Integer subtype
-@assert !(1.0 in I)         # 1.0 is one instance of Real subtype, not Integer subtype
+@assert 1 in I              # 1 is one instance of an Integer subtype
+@assert !(1.0 in I)         # 1.0 is one instance of a Real subtype, not an Integer subtype
 ```
 The set `I` includes instances of all subtypes of `Integer` (`BigInt`,
 `Int128`, `Int16`, `Int32`, `Int64`, `Int8`, `UInt128`, `UInt16`, `UInt32`,
@@ -47,8 +47,8 @@ but does not actually "contain" them. The membership evaluation is performed
 ```julia
 R = @setbuild(Real)
 
-@assert 1.0 in R            # 1 is one instance of Real subtype
-@assert !(1.0im in R)       # 1.0im is one instance of Complex type, not Real subtype
+@assert 1.0 in R            # 1 is one instance of a Real subtype
+@assert !(1.0im in R)       # 1.0im is one instance of a Complex type, not a Real subtype
 ```
 Similarly, the set `R` includes all instances of all subtypes of the `Real`
 type, encompassing all subtypes of `Integer`, `AbstractFloat`,
@@ -62,7 +62,7 @@ end
 
 S = @setbuild(MyStruct)
 
-@assert MyStruct(1,2) in S  # MyStruct(1,2) is one instance of MyStruct type
+@assert MyStruct(1,2) in S  # MyStruct(1,2) is one instance of a MyStruct type
 @assert !(1 in S)           # 1 is not an instance of MyStruct type
 ```
 Note also that `@setbuild` can create sets from user-defined types.

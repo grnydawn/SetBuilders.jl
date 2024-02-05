@@ -26,6 +26,8 @@ them using set operations such as unions and intersections, and check if an
 object is a member of the set.
 
 ```julia
+using SetBuilders
+
 I = @setbuild(Integer)           # creates a set from Julia Integer type
 A = @setbuild(x ∈  I, 0 < x < 4) # creates a set with the predicate of "0 < x < 4"
 B = @setbuild(x in I, 2 < x < 6) # creates a set with the predicate of "2 < x < 6"
@@ -48,6 +50,12 @@ Alternatively, it can be installed via the Pkg API:
 
 ```julia
 julia> import Pkg; Pkg.add("SetBuilders")
+```
+
+Once installed, the SetBuilders package can be loaded with using SetBuilders.
+
+```julia
+using SetBuilders
 ```
 
 ## Sets in Mathematics
@@ -126,12 +134,12 @@ the "=>" mark correctly identifies set `B` as the reason for exclusion.
     A = { x ∈ ::Integer }
 ```
 
-The function `ismember` serves a same purpose to the membership operator,
+The function `ismember` serves the same purpose as the membership operator,
 `in` or `∈`, but with additional keyword arguments. In the example,
 `on_nomember` accepts a function with one input argument, `hist`, and prints
 the output from the `describe` function, which details the structure of the
-first argument set. Optionally, the `describe` function accepts a `mark`
-keyword argument to indicate a specific set in the output. In this case,
+first argument's set. Optionally, the `describe` function accepts a `mark`
+keyword argument to highlight a specific set in the output. In this case,
 `hist[end].set` is the set that fails the membership test.
 
 For further details, please continue reading the following manual.

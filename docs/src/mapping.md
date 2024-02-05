@@ -14,7 +14,7 @@ end
 I  = @setbuild(Integer)
 M1 = @setbuild(
         (x, y) in I,        # domain: a pair of integer values
-        z in S,             # codomain: an instance of MyStruct type
+        z in S,             # codomain: an instance of a MyStruct type
         z = mystruct(x, y), # forward mapping: MyStruct z from the pair in the domain
         (x, y) = (z.a, z.b),# backward mapping: The domain is recovered from MyStruct fields
         mystruct=MyStruct   # Let SetBuilders know the name of mystruct

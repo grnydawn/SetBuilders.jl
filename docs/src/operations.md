@@ -2,8 +2,6 @@
 SetBuilders sets support conventional set operations including union,
 intersection, difference, symmetric difference, and complement.
 
-All of the `@assert` checks in this page should pass.
-
 To support examples in this page, the following sets are pre-built.
 To learn how to use `@setbuild` for the following set creations,
 see [Set Creation](@ref).
@@ -24,6 +22,8 @@ The function `union` or the set operator `∪` performs set union.
 @assert 14 in A ∪ B         # 14 is a member of set B
 @assert !(-1 in A ∪ B)      # -1 is not a member of either set A or set B
 ```
+
+All of the `@assert` checks in this page should pass.
 
 !!! note
     The number of set arguments can be more than two. For example,
@@ -63,16 +63,18 @@ The function `symdiff` performs set symmetric difference.
 ```
 
 !!! note
-    Where there are more than two set arguments, symmetric difference operation
-    is applied as binary operation with previous operation result. For example,
-    symdiff(A, B, X) is evaluated as "(symdiff(symdiff(A, B), X)".
+    Where there are more than two set arguments, the symmetric difference
+    operation is applied as a binary operation with the result of the
+    previous operation. For example, symdiff(A, B, X) is evaluated as
+    symdiff(symdiff(A, B), X).
 
 ## Complement
 
 The function `complement` or the set operator `~` performs set complement.
 
-A = @setbuild(x in I, 0 <= x < 10)
 ```julia
+A = @setbuild(x in I, 0 <= x < 10)
+
 @assert 10 in complement(A)     # 10 is not a member of set A
 !assert !(1 in ~A)              # 1 is a member of set A
 @assert 1 in ~complement(A)     # double complements cancel each other out
