@@ -11,11 +11,11 @@ Membership events occur during membership check using `ismember` functions.
 Note that membership check operators of `in` or `∈` can not be used for event
 handling.
 
-## creating a callback function
+### Creating a callback function
 When an event occurs, SetBuilders makes a call to the registered callback
 function with one argument that is a vector of named tuple(:set and :elem).
 
-Let's start creating a callback function.
+Let's start by creating a callback function.
 
 ```julia
 function F1(history)
@@ -25,12 +25,12 @@ function F1(history)
     println("-------------")
     println(desc)
     println("-------------")
-    println(", with an element of `$(history[end].elem)` at the set pointed by '=>'")
+    println(", because '$(history[end].elem)' is not a member of the set pointed by '=>'")
     println("#############")
 end
 ```
 
-The function `P` takes one argument, `history`, which contains all the sets
+The function `F1` takes one argument, `history`, which contains all the sets
 visited during the membership check and the elements used in these sets.
 
 The first item in the vector is the tuple of the set specified as the first
@@ -44,6 +44,8 @@ to mark the last visited set where the event occurred. See
 [Marking a set in description](@ref) for an explanation of how to use the
 `mark` keyword argument in the `describe` function.
 
+### Registering a callback function
+
 Once a callback function is created, registering it to the `ismember`
 function is straightforward.
 
@@ -52,10 +54,13 @@ I = @setbuild(Integer)
 P1 = @setbuild(x in I, 0 <= x < 10)
 M1 = @setbuild(x in P1, z in I, z = x + 5, x = z - 5)
 
-ismember(0, M1, on_notamember=F1)
+ismember(0, M1, on_nomember=F1)
 ```
-To register a membership failure event, we used the `on_notamember` keyword
-argument. In the case of a membership success event, `on_member` is used.
+To register a callback function when a membership failure event occurs, we used
+the `on_nomember` keyword argument. In the case of a membership success
+event, `on_member` is used.
+
+### Reading output from the callback function
 
 The previous example produces:
 
@@ -75,7 +80,7 @@ F-MAP \/
     B-MAP: x = z - 5
     B = { x ∈ ::Integer }
 -------------
-, with an element of `-5` at the set pointed by '=>'
+, because '-5' is not a member of the set pointed by '=>'
 #############
 false
 ```

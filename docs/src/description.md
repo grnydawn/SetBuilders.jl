@@ -153,7 +153,7 @@ The `describe` function features a way to mark a specific set that is part of
 a larger set, enabling users to easily pinpoint a specific set for a certain
 purpose.
 
-In previous examples, set `M1` uses sets `P1` and `I`, and set `P` uses set `I`.
+In previous examples, set `M1` uses sets `P1` and `I`, and set `P1` uses set `I`.
 Assuming we want to know all the cases in which set `I` is used in set `M1`, we
 can use the `describe` function as follows:
 

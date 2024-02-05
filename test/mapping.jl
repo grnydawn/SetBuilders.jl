@@ -47,8 +47,8 @@
 #                (x, y) = [(z.a, z.b), (z.b, z.a)], mystruct=MyStruct)
 @test forward_map(MAPD6, [(0, 9)]) == [MyStruct(0, 9)]
 # TODO: fix the following issue
-#@test backward_map(MAPD6, MyStruct(0, 9)) == [(0, 9), (9, 0)]
-@test backward_map(MAPD6, MyStruct(0, 9)) == [(0, 9), (9, 9), (0, 0), (9, 0)]
+@test backward_map(MAPD6, MyStruct(0, 9)) == [(0, 9), (9, 0)]
+#@test backward_map(MAPD6, MyStruct(0, 9)) == [(0, 9), (9, 9), (0, 0), (9, 0)]
 
 #MAPD7 = @setbuild(x in I, y in I, (y = x + 1, 0 <= y < 10),
 #                    (x = y - 1, 0 <= x < 10))

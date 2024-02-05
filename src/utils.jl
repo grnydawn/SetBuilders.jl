@@ -35,4 +35,3 @@ function sb_eval(expr, env::Dict{Symbol, Any}=Dict{Symbol, Any}())
         error("Evaluating set expression, $expr, is failed: $err")
     end
 end
-

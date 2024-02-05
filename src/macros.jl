@@ -373,6 +373,21 @@ end
 
 function get_mapping(arg, domain)
 
+    function _check_balance(m)
+        L = length(m)
+
+        if L == 0
+            error("No mapping is found")
+
+        elseif L != 1
+            n_maps = map(v->length(v), values(m))
+
+            if any(l -> (l != n_maps[1]), n_maps[2:end])
+                error("# of mapping per each set variable mismatch: $(m)")
+            end
+        end
+    end
+
     _map = Dict()
     _pred = :(())
 
@@ -396,6 +411,10 @@ function get_mapping(arg, domain)
                         for (setvar, ex) in zip(arg.args[1].args, arg.args[2].args)
                             push!(_map[setvar], ex)
                         end
+
+                        # check if # of items per each servar is the same
+                        _check_balance(_map)
+
                     elseif arg.args[2].head == :vect
                         for exprs in arg.args[2].args
                             if exprs.head == :tuple
@@ -406,6 +425,10 @@ function get_mapping(arg, domain)
                                 error("Unsupported mapping syntax: $exprs")
                             end
                         end
+
+                        # check if # of items per each servar is the same
+                        _check_balance(_map)
+
                     else
                         dump(arg)
                         error("Unsupported mapping syntax: $(arg.args[2])")
@@ -445,6 +468,8 @@ function get_mapping(arg, domain)
     else
         error("Unsupported mapping syntax: $arg")
     end
+
+    _check_balance(_map)
 
     pairs = Expr(:tuple)
     for (svar, ex) in _map

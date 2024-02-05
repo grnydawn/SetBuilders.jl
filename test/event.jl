@@ -16,7 +16,7 @@ P1 = hist -> (@test describe(hist[1].set, mark=hist[end].set) == raw"""
 
 F2 = hist -> (@test describe(hist[1].set, mark=hist[end].set) == raw"""
 => { x ∈ ::Integer }""")
-@test  !ismember(0.1, I, on_notamember=F2)
+@test  !ismember(0.1, I, on_nomember=F2)
 
 P3 = hist -> (@test describe(hist[1].set, mark=hist[end].set) == raw"""
 => { x ∈ A | 0 <= x < 10 }, where
@@ -26,7 +26,7 @@ P3 = hist -> (@test describe(hist[1].set, mark=hist[end].set) == raw"""
 F4 = hist -> (@test describe(hist[1].set, mark=hist[end].set) == raw"""
 { x ∈ A | 0 <= x < 10 }, where
  => A = { x ∈ ::Integer }""")
-@test  !ismember(0.1, PRED3, on_notamember=F4)
+@test  !ismember(0.1, PRED3, on_nomember=F4)
 
 C = PRED3 ∩ PRED4
 
@@ -45,7 +45,7 @@ F6 = hist -> (@test describe(hist[1].set, mark=hist[end].set) == raw"""
 ∩
 => { x ∈ A | 5 <= x < 15 }, where
     A = { x ∈ ::Integer }""")
-@test  !ismember(4, C, on_notamember=F6)
+@test  !ismember(4, C, on_nomember=F6)
 
 P7 = hist -> (@test describe(hist[1].set, mark=hist[end].set) == raw"""
 => 
@@ -75,7 +75,7 @@ F-MAP \/
     B-MAP: x = z - 5
     B = { x ∈ ::Integer }""")
 
-@test !ismember(4, MAPD1, on_notamember=F8)
+@test !ismember(4, MAPD1, on_nomember=F8)
 
 F9 = hist -> (@test describe(hist[1].set, mark=hist[end].set) == raw"""
 
@@ -90,4 +90,4 @@ F-MAP \/
     B-MAP: x = z - 5
  => B = { x ∈ ::Integer }""")
 
-@test !ismember(0.1, MAPD1, on_notamember=F9)
+@test !ismember(0.1, MAPD1, on_nomember=F9)
