@@ -153,4 +153,3 @@ For further details, please continue reading the following manual.
 * [Set Element Generation](@ref): explains how to generate set elements from Mapped sets.
 * [Set Sharing](@ref): explains how to create/use/share a Julia module for sets
 * [Reference](@ref): provides reference manual for using SetBuilders.
-* [Developer Documentaion](@ref): explains how to extend SetBuilders.

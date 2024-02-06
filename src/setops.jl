@@ -184,5 +184,10 @@ Base.symdiff(sets::SBSet...; kwargs...)     = do_setop(:symdiff, sets; kwargs...
 Base.:-(sets::SBSet...)                     = do_setop(:setdiff, sets) 
 Base.:~(set::SBSet)                         = do_setop(:setdiff,
                                                        (UniversalSet(), set))
+"""
+    complement(set <: SBSet)
+
+generates a complement set
+"""
 complement(set::SBSet; kwargs...)           = do_setop(:setdiff,
                                                        (UniversalSet(), set); kwargs...)

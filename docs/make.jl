@@ -31,8 +31,8 @@ makedocs(;
             "sharing.md",
         ],
         "Reference" => "reference.md",
-        "Developer Documentation" => "developer.md",
     ],
+        #"Developer Documentation" => "developer.md",
 )
 
 deploydocs(;

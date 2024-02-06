@@ -21,6 +21,7 @@ function get_mark(set, mark)
     end
 end
 
+
 function describe(set::EmptySet; prepend="", prefix="", depth=0,
                     limit=-1, mark=nothing, collect=nothing) :: String
 
@@ -275,3 +276,22 @@ function describe(set::MappedSet; prepend="", prefix="", depth=0,
 end
 
 Base.repr(set::SBSet)   = describe(set)
+
+"""
+    describe(set <: SBSet; kwargs...)
+
+returns a string describing a set
+
+```julia
+julia> I = @setbuild(Integer)
+TypeSet(Integer)
+
+julia> P = @setbuild(x in I, 0 <= x < 10)
+PredicateSet((x ∈ TypeSet(Integer)) where 0 <= x < 10)
+
+julia> println(describe(P))
+{ x ∈ A | 0 <= x < 10 }, where
+    A = { x ∈ ::Integer }
+```
+"""
+describe(set::SBSet; kwargs) = ""

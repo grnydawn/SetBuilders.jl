@@ -219,8 +219,12 @@ function do_mapping(
     end
 end
 
+"""
+    bmap(set <: SBSet, elems; kwargs...)
 
-function backward_map(set::MappedSet, coelems; hist=[], kwargs...)
+generates element(s) in domain of a MappedSet.
+"""
+function bmap(set::MappedSet, coelems; hist=[], kwargs...)
 
     donames, conames = get_setnames(set)
 
@@ -231,7 +235,12 @@ function backward_map(set::MappedSet, coelems; hist=[], kwargs...)
             hist, kwargs)
 end
 
-function forward_map(set::MappedSet, doelems; hist=[], kwargs...)
+"""
+    fmap(set <: SBSet, elems; kwargs...)
+
+generates element(s) in codomain of a MappedSet.
+"""
+function fmap(set::MappedSet, doelems; hist=[], kwargs...)
 
     donames, conames = get_setnames(set)
 
@@ -242,35 +251,6 @@ function forward_map(set::MappedSet, doelems; hist=[], kwargs...)
             hist, kwargs)
 end
 
-"""
-    ismember(elem, set::EnumerableSet; kwargs...)
-
-Check if `elem` is a member of `set`
-
-# Examples
-```julia-repl
-julia> A = @setbuild(Union{Int64, Float64}[1])
-EnumerableSet([{Float64}*0, {Int64}*1])
-
-julia> ismember(1, A)
-true
-
-julia> ismember(Int32(1), A)
-false
-
-julia> push!(A, Float64(2.0))
-EnumerableSet([{Float64}*1, {Int64}*1])
-
-julia> ismember(Float64(2.0), A)
-true
-
-julia> pop!(A, Float64(2.0))
-2.0
-
-julia> ismember(Float64(2.0), A)
-false
-```
-"""
 function ismember(elem, set::EnumerableSet; kwargs...)
 
     hist = get(kwargs, :_imhist_, [])
@@ -288,26 +268,6 @@ function ismember(elem, set::EnumerableSet; kwargs...)
 
 end
 
-"""
-    ismember(elem, set::PredicateSet; kwargs...)
-
-Check if `elem` is a member of `set`
-
-# Examples
-```julia-repl
-julia> I = @setbuild(Integer)
-TypeSet(Integer)
-
-julia> A = @setbuild(x in I, 0 <= x < 10)
-PredicateSet((x ∈ TypeSet(Integer)) where 0 <= x < 10)
-
-julia> ismember(0, A)  # 0 in A 
-true
-
-julia> ismember(10, A) # 10 in A
-false
-```
-"""
 function ismember(elem, set::PredicateSet; kwargs...) :: Bool
 
     hist = get(kwargs, :_imhist_, [])
@@ -379,41 +339,12 @@ function ismember(elem, set::PredicateSet; kwargs...) :: Bool
     return _event(set, :member, false, hist, kwargs)
 end
 
-"""
-    ismember(elem, set::MappedSet; kwargs...)
-
-Check if `elem` is a member of `set`
-
-# Examples
-```julia-repl
-julia> I = @setbuild(Integer)
-TypeSet(Integer)
-
-julia> struct MyStruct
-       a
-       b
-       end
-
-julia> S = @setbuild(MyStruct)
-TypeSet(MyStruct)
-
-julia> A = @setbuild(s in S, (x in I, y in I) -> mystruct(x,y), s -> (s.a, s.b),
-                     mystruct=MyStruct)
-MappedSet((x ∈ TypeSet(Integer)), (y ∈ TypeSet(Integer)) -> (s ∈ TypeSet(MyStruct)))
-
-julia> ismember(MyStruct(1, 1), A)   # MyStruct(1, 1) in A
-true
-
-julia> ismember(MyStruct(1.0, 1), A) # MyStruct(1.0, 1) in A
-false
-```
-"""
 function ismember(coelem, set::MappedSet; kwargs...)
 
     hist = get(kwargs, :_imhist_, [])
     push!(hist, (set = set, elem = coelem))
 
-    doelems = backward_map(set, [coelem]; hist=hist, kwargs...)
+    doelems = bmap(set, [coelem]; hist=hist, kwargs...)
 
     if length(doelems) == 0
         return _event(set, :member, false, hist, kwargs)
@@ -423,7 +354,7 @@ function ismember(coelem, set::MappedSet; kwargs...)
     for doelem in doelems
 
         # generate elem in co-domain
-        coelems2 = forward_map(set, [doelem]; hist=hist, kwargs...)
+        coelems2 = fmap(set, [doelem]; hist=hist, kwargs...)
 
         # check if generate elem in co-domain equals to
         # the original elem in codomain
@@ -439,32 +370,6 @@ function ismember(coelem, set::MappedSet; kwargs...)
     return _event(set, :member, false, hist, kwargs)
 end
 
-"""
-    ismember(elem, set::CompositeSet; kwargs...)
-
-Check if `elem` is a member of `set`
-
-# Examples
-```julia-repl
-julia> I = @setbuild(Integer)
-TypeSet(Integer)
-
-julia> A = @setbuild(x in I, 0 <= x < 10)
-PredicateSet((x ∈ TypeSet(Integer)) where 0 <= x < 10)
-
-julia> B = @setbuild(x in I, 5 <= x < 15)
-PredicateSet((x ∈ TypeSet(Integer)) where 5 <= x < 15)
-
-julia> C = A ∩ B
-CompositeSet(PredicateSet((x ∈ TypeSet(Integer)) where 0 <= x < 10) ∩ PredicateSet((x ∈ TypeSet(Integer)) where 5 <= x < 15))
-
-julia> ismember(5, C) # 5 in C
-true
-
-julia> ismember(0, C) # 0 in C
-false
-```
-"""
 function ismember(elem, set::CompositeSet; kwargs...)
 
     hist = get(kwargs, :_imhist_, [])
@@ -533,23 +438,6 @@ function ismember(elem, set::CompositeSet; kwargs...)
 
 end
 
-"""
-    ismember(elem, set::TypeSet; kwargs...)
-
-Check if `elem` is a member of `set`
-
-# Examples
-```julia-repl
-julia> I = @setbuild(Integer)
-TypeSet(Integer)
-
-julia> ismember(1, I)   # 1 in I
-true
-
-julia> ismember(0.1, I) # 0.1 in I
-false
-```
-"""
 function ismember(elem, set::TypeSet; kwargs...)
 
     hist = get(kwargs, :_imhist_, [])
@@ -558,23 +446,6 @@ function ismember(elem, set::TypeSet; kwargs...)
     return _event(set, :member, elem isa find_param(set), hist, kwargs)
 end
 
-"""
-    ismember(elem, set::UniversalSet; kwargs...)
-
-Check if `elem` is a member of `set`
-
-# Examples
-```julia-repl
-julia> U = @setbuild(Any)
-UniversalSet()
-
-julia> ismember(1, U)   # 1 in U
-true
-
-julia> ismember(0.1, U) # 0.1 in U
-true
-```
-"""
 function ismember(elem, set::UniversalSet; kwargs...)
 
     hist = get(kwargs, :_imhist_, [])
@@ -583,23 +454,6 @@ function ismember(elem, set::UniversalSet; kwargs...)
     return _event(set, :member, true, hist, kwargs)
 end
 
-"""
-    ismember(elem, set::EmptySet; kwargs...)
-
-Check if `elem` is a member of `set`
-
-# Examples
-```julia-repl
-julia> E = @setbuild()
-EmptySet()
-
-julia> ismember(1, E)   # 1 in E
-false
-
-julia> ismember(0.1, E) # 0.1 in E
-false
-```
-"""
 function ismember(elem, set::EmptySet; kwargs...)
 
     hist = get(kwargs, :_imhist_, [])
@@ -608,24 +462,37 @@ function ismember(elem, set::EmptySet; kwargs...)
     return _event(set, :member, false, hist, kwargs)
 end
 
+Base.:in(e, set::SBSet)         = ismember(e, set)
+Base.:in(e, set::EmptySet)      = false
+Base.:in(e, set::UniversalSet)  = true
+
 """
-    elem in set -> Bool
+    ismember(elem, set <: SBSet; kwargs...)
 
-Check if `elem` is a member of `set`
+returns `true` if `elem` is a member of `set`.
+Otherwise returns false.
 
-# Examples
-```julia-repl
+## `on_member` and `on_nomember` keyword arguments
+A callback function registered with `on_member` 
+will be called when `elem` is known to be a member of `set`.
+
+A callback function registered with `on_nomember` 
+will be called when `elem` is known not to be a member of `set`.
+
+```julia
 julia> I = @setbuild(Integer)
 TypeSet(Integer)
 
-julia> 1 in I   # ismember(1, I)
-true
+julia> P = @setbuild(x in I, 0 <= x < 10)
+PredicateSet((x ∈ TypeSet(Integer)) where 0 <= x < 10)
 
-julia> 0.1 in I # ismember(0.1, I)
+julia> F = h -> println(describe(h[1].set, mark=h[end].set))
+#7 (generic function with 1 method)
+
+julia> ismember(-1, P, on_nomember=F)
+=> { x ∈ A | 0 <= x < 10 }, where
+    A = { x ∈ ::Integer }
 false
 ```
 """
-Base.:in(e, set::SBSet)         = ismember(e, set)
-
-Base.:in(e, set::EmptySet)      = false
-Base.:in(e, set::UniversalSet)  = true
+ismember(elem, set::SBSet; kwargs...) = false

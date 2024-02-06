@@ -488,48 +488,91 @@ end
 
 The `@setbuild` macro creates various SetBuilders sets.
 
-The `@setbuild` macro in SetBuilders for creating sets
-from Julia data types, predicates, and mappings.
-For example, `I = @setbuild(Integer)` creates a set of
-all Julia Integer type objects, and
-`A = @setbuild(x ∈ I, 0 < x < 4)` creates a set that
-implies to contain the integers 1, 2, and 3.
+The number of arguments varies depending on the type of
+set to create.
 
-# Examples
+## No argument
+* EmptySet
 
 ```julia-repl
-julia> E = @setbuild()
+julia> @setbuild()
 EmptySet()
+```
 
-julia> U = @setbuild(Any)
-UniversalSet()
+## One argument
+* TypeSet
+The first argument is any Julia type.
 
-julia> I = @setbuild(Integer) # Julia Integer-type set
+```julia-repl
+julia> @setbuild(Integer)
 TypeSet(Integer)
+```
 
-julia> D = @setbuild(Dict{String, Number}) # Julia Dict{String, Number}-type set
-TypeSet(Dict{String, Number})
+* EnumerableSet
+The first argument is a Vector with optionally Julia type
 
-julia> struct MyStruct
-           a
-           b
-       end
-
-julia> S = @setbuild(MyStruct)  # Julia user-type set
-TypeSet(MyStruct)
-
-julia> N = @setbuild([1, 2, 3]) # Enumerable set
+```julia-repl
+julia> @setbuild([1, 2, 3])
 EnumerableSet([{Int64}*3])
 
-julia> C = @setbuild((I, I))  # Cartesian sets
-PredicateSet((c1 ∈ TypeSet(Integer)), (c2 ∈ TypeSet(Integer)) where true)
-
-julia> P = @setbuild(x in I, 0 <= x < 10) # Predicate sets
-PredicateSet((x ∈ TypeSet(Integer)) where 0 <= x < 10)
-
-julia> M = @setbuild(z in I, (x in P) -> x + 5, z -> z - 5) # Mapped sets
-MappedSet((x ∈ PredicateSet((x ∈ TypeSet(Integer)) where 0 <= x < 10)) -> (z ∈ TypeSet(Integer)))
+julia> @setbuild(Int32[])
+EnumerableSet([{Int32}*0])
 ```
+
+* UniversalSet
+The first argument is `Any` type
+
+```julia-repl
+julia> @setbuild(Any)
+UniversalSet()
+```
+
+## Two arguments
+* PredicateSet
+The first argument is the domain of the set.
+The second argument is the predicate of the set.
+
+```julia-repl
+julia> I = @setbuild(Integer)
+TypeSet(Integer)
+
+julia> @setbuild(x in I, 0 <= x < 5)
+PredicateSet((x ∈ TypeSet(Integer)) where 0 <= x < 5)
+```
+
+## Four arguments
+* MappedSet
+The first argument is the domain of the set.
+The second argument is the codomain of the set.
+The third argument is the forward mapping of the set.
+The fourth argument is the backward mapping of the set.
+
+```julia-repl
+julia> I = @setbuild(Integer)
+TypeSet(Integer)
+
+julia> @setbuild(x in I, y in I, y = x + 1, x = y - 1)
+MappedSet((x ∈ TypeSet(Integer)) -> (y ∈ TypeSet(Integer)))
+```
+
+## Keyword arguments
+The main usage of keyword arguments is to provide expressions
+inside of `@setbuild` with the objects defined outside of `@setbuild`.
+
+```julia-repl
+julia> I = @setbuild(Integer)
+TypeSet(Integer)
+
+julia> k = 1
+1
+
+julia> @setbuild(x in I, y in I, y = x + c, x = y - c, c=k)
+MappedSet((x ∈ TypeSet(Integer)) -> (y ∈ TypeSet(Integer)))
+```
+
+!!! note
+    keyword names starting with "sb_" are reserved for SetBuilders
+    internal uses.
 """
 macro setbuild(args...)
 
@@ -632,7 +675,7 @@ end
 """
     @setpkg command[ command-arguments... ]
 
-The @setpkg macro enables the reuse of sets that were developed separately.
+The @setpkg macro enables sharing sets among developers and users.
 
 # commands
 
