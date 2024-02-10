@@ -90,3 +90,10 @@ F-MAP \/
  => B = { x ∈ ::Integer }""")
 
 @test !ismember(0.1, MAPD1, on_nomember=F9)
+
+F10 = hist -> (@test describe(hist[1].set, mark=hist[end].set) == raw"""
+=> { x ∈ ::Int64*3 }""")
+
+ENUM_1 = @setbuild([1,2,3], sb_on_nomember=F10)
+
+@test !ismember(0.1, ENUM_1)

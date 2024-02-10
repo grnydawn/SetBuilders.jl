@@ -9,8 +9,8 @@ using Test
 #    include("membership.jl")
 #    include("operations.jl")
 #    include("describe.jl")
-    include("event.jl")
-#    include("mapping.jl")
+#    include("event.jl")
+    include("mapping.jl")
 #    include("setpkg.jl")
 
 end

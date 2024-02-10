@@ -20,25 +20,25 @@ function _event(set, eventtype, event, sb_kw; kwargs...)
          kwargs[:on_nomember] isa Function && kwargs[:on_nomember](hist))
 
         (haskey(set._meta, :sb_on_member) && event == true &&
-         set._meta[:on_member] isa Function && set._meta[:sb_on_member](hist))
+         set._meta[:sb_on_member] isa Function && set._meta[:sb_on_member](hist))
 
         (haskey(set._meta, :sb_on_nomember) && event == false &&
-         set._meta[:on_nomember] isa Function && set._meta[:sb_on_nomember](hist))
+         set._meta[:sb_on_nomember] isa Function && set._meta[:sb_on_nomember](hist))
 
     elseif eventtype == :mapping
-        hist = sb_kw[:set_history]
+        events = sb_kw[:map_events]
 
-        (haskey(kwargs, :on_member) && event == true &&
-         kwargs[:on_member] isa Function && kwargs[:on_member](hist))
+        (haskey(kwargs, :on_mapping) && event == true &&
+         kwargs[:on_mapping] isa Function && kwargs[:on_mapping](events))
 
-        (haskey(kwargs, :on_nomember) && event == false &&
-         kwargs[:on_nomember] isa Function && kwargs[:on_nomember](hist))
+        (haskey(kwargs, :on_nomapping) && event == false &&
+         kwargs[:on_nomapping] isa Function && kwargs[:on_nomapping](events))
 
-        (haskey(set._meta, :sb_on_member) && event == true &&
-         set._meta[:on_member] isa Function && set._meta[:sb_on_member](hist))
+        (haskey(set._meta, :sb_on_mapping) && event == true &&
+         set._meta[:on_mapping] isa Function && set._meta[:sb_on_mapping](events))
 
-        (haskey(set._meta, :sb_on_nomember) && event == false &&
-         set._meta[:on_nomember] isa Function && set._meta[:sb_on_nomember](hist))
+        (haskey(set._meta, :sb_on_nomapping) && event == false &&
+         set._meta[:on_nomapping] isa Function && set._meta[:sb_on_nomapping](events))
 
     else
         error("Unknown event type: $eventtype.")
@@ -126,7 +126,7 @@ function do_mapping(
         set::MappedSet, srcelems, mapping,
         srcnames, srcdomain, srcpred,
         dstnames, dstdomain, dstpred,
-        sb_kw, on_mapping=nothing, on_nomapping=nothing,
+        sb_kw; on_mapping=nothing, on_nomapping=nothing,
         on_member=nothing, on_nomember=nothing)
 
     # check if a vector input
@@ -160,6 +160,8 @@ function do_mapping(
                          on_nomember=on_nomember)
             push!(events, (event=:source_membership_fail, element=srcelem,
                            source_domain=srcdomain))
+            _event(set, :mapping, false, sb_kw, on_nomapping=on_nomapping)
+            push!(dstelems, nothing)
             continue
         end
 
@@ -167,6 +169,8 @@ function do_mapping(
         if !_check_pred(srcelem, srcpred, srcenv, srcnames)
             push!(events, (event=:source_predicate_fail, element=srcelem,
                            source_predicate=srcpred))
+            _event(set, :mapping, false, sb_kw, on_nomapping=on_nomapping)
+            push!(dstelems, nothing)
             continue
         end
 
@@ -197,6 +201,8 @@ function do_mapping(
             # filter doelems
             my_channel = Channel( (c) -> gen_doelems(c, _dstelems, _dstenv, dstnames)) 
 
+            elembuf = []
+
             for (dstelem, dstenv) in my_channel
                 # check dstelem in target domain
                 if !_check_member(dstelem, dstdomain, sb_kw, on_member=on_member,
@@ -213,7 +219,16 @@ function do_mapping(
                     continue
                 end
 
-                push!(dstelems, dstelem)
+                push!(elembuf, dstelem)
+            end
+
+
+            if length(elembuf) > 0
+                append!(dstelems, elembuf)
+
+            else
+                _event(set, :mapping, false, sb_kw, on_nomapping=on_nomapping)
+                append!(dstelems, nothing)
             end
 
         catch err
@@ -223,8 +238,8 @@ function do_mapping(
     end
 
     if is_vector
-        _event(set, :mapping, length(dstelems) > 0, sb_kw,
-               on_mapping=on_mapping, on_nomapping=on_nomapping)
+        _event(set, :mapping, length(dstelems) > 0 && all(e->!(e isa Nothing), dstelems),
+               sb_kw, on_mapping=on_mapping)
 
         return dstelems
 
@@ -234,12 +249,14 @@ function do_mapping(
         return nothing
 
     elseif length(dstelems) == 1
-        _event(set, :mapping, true, sb_kw, on_mapping=on_mapping)
+        _event(set, :mapping, !(dstelems[1] isa Nothing), sb_kw,
+               on_mapping=on_mapping, on_nomapping=on_nomapping)
 
         return dstelems[1]
 
     else
-        _event(set, :mapping, true, sb_kw, on_mapping=on_mapping)
+        _event(set, :mapping, length(dstelems) > 0 && all(e->!(e isa Nothing), dstelems),
+               sb_kw, on_mapping=on_mapping, on_nomapping=on_nomapping)
 
         return dstelems
     end
@@ -250,15 +267,17 @@ end
 
 convert `elems` in the argument to element(s) in domain of a MappedSet.
 """
-function bmap(set::MappedSet, coelems, sb_kw=nothing; kwargs...)
+function bmap(set::MappedSet, coelems, sb_kw=nothing; on_mapping=nothing,
+        on_nomapping=nothing)
 
+    sb_kw = sb_kw isa Nothing ? _init_sb_kw() : sb_kw
     donames, conames = get_setnames(set)
 
     return do_mapping(
             set, coelems, set._backward_map,
             conames, set._codomain, set._codomain_pred,
             donames, set._domain, set._domain_pred,
-            sb_kw, kwargs)
+            sb_kw, on_mapping=on_mapping, on_nomapping=on_nomapping)
 end
 
 """
@@ -266,15 +285,17 @@ end
 
 convert `elems` in the argument to element(s) in codomain of a MappedSet.
 """
-function fmap(set::MappedSet, doelems, sb_kw=nothing; kwargs...)
+function fmap(set::MappedSet, doelems, sb_kw=nothing; on_mapping=nothing,
+        on_nomapping=nothing)
 
+    sb_kw = sb_kw isa Nothing ? _init_sb_kw() : sb_kw
     donames, conames = get_setnames(set)
 
     return do_mapping(
             set, doelems, set._forward_map,
             donames, set._domain, set._domain_pred,
             conames, set._codomain, set._codomain_pred,
-            sb_kw, kwargs)
+            sb_kw, on_mapping=on_mapping, on_nomapping=on_nomapping)
 end
 
 function ismember(elem, set::EnumerableSet, sb_kw=nothing; on_member=nothing,
