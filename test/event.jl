@@ -9,7 +9,6 @@
 # event handler for debugging
 #P = hist -> println("PASS\n"*describe(hist[1].set, mark=hist[end].set))
 #F = hist -> println("FAIL\n"*describe(hist[1].set, mark=hist[end].set))
-
 P1 = hist -> (@test describe(hist[1].set, mark=hist[end].set) == raw"""
 => { x ∈ ::Integer }""")
 @test  ismember(1, I, on_member=P1)

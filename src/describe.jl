@@ -278,9 +278,11 @@ end
 Base.repr(set::SBSet)   = describe(set)
 
 """
-    describe(set <: SBSet; kwargs...)
+    describe(set <: SBSet; mark=nothing, collect=nothing) :: String
 
 returns a string describing a set
+
+# Example
 
 ```julia
 julia> I = @setbuild(Integer)
@@ -292,6 +294,18 @@ PredicateSet((x ∈ TypeSet(Integer)) where 0 <= x < 10)
 julia> println(describe(P))
 { x ∈ A | 0 <= x < 10 }, where
     A = { x ∈ ::Integer }
+```
+
+# Keywords
+
+**`mark`** specifies a set to apply markings to. User also
+can change the marking letters by assigining a tuple of
+a set and a mark string.
+
+```julia
+julia> println(describe(P, mark=(I, "## ")))
+{ x ∈ A | 0 <= x < 10 }, where
+ ## A = { x ∈ ::Integer }
 ```
 """
 describe(set::SBSet; kwargs) = ""

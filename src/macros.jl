@@ -230,7 +230,7 @@ function proc_build_onearg(arg, env, meta)
 
     if arg isa Symbol
         if arg == :Any
-            return :(SetBuilders.UniversalSet())
+            return :(SetBuilders.UniversalSet($meta))
 
         else
             arg = esc(arg)
@@ -570,6 +570,13 @@ julia> @setbuild(x in I, y in I, y = x + c, x = y - c, c=k)
 MappedSet((x ∈ TypeSet(Integer)) -> (y ∈ TypeSet(Integer)))
 ```
 
+# Keywords
+
+Keyword arguments are used to provide `@setbuild` macro with named
+references. For example, in previous code examples, `c=k` keyword
+argument provides `@setbuild` macro with the value of `k` so that
+`y = x + c` or `x = y - c` can be correctly evaluated.
+
 !!! note
     keyword names starting with "sb_" are reserved for SetBuilders
     internal uses.
@@ -581,7 +588,8 @@ macro setbuild(args...)
     NARGS = length(args)
 
     if NARGS == 0
-        return :(SetBuilders.EmptySet())
+        env, meta   = split_kwargs(kwargs)
+        return :(SetBuilders.EmptySet($meta))
 
     elseif NARGS == 1
         env, meta   = split_kwargs(kwargs)
@@ -712,6 +720,11 @@ true
 julia> 0 in MYSET
 false
 ```
+
+!!! note
+    keyword names starting with "sb_" are reserved for SetBuilders
+    internal uses.
+
 """
 macro setpkg(args...)
 

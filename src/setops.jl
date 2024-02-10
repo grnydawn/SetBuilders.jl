@@ -188,6 +188,13 @@ Base.:~(set::SBSet)                         = do_setop(:setdiff,
     complement(set <: SBSet)
 
 generates a complement set
+
+```julia
+julia> complement(@setbuild()) == @setbuild(Any)
+true
+
+julia> ~@setbuild() == @setbuild(Any)
+true
 """
 complement(set::SBSet; kwargs...)           = do_setop(:setdiff,
                                                        (UniversalSet(), set); kwargs...)
