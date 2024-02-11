@@ -183,11 +183,18 @@ Base.setdiff(sets::SBSet...; kwargs...)     = do_setop(:setdiff, sets; kwargs...
 Base.symdiff(sets::SBSet...; kwargs...)     = do_setop(:symdiff, sets; kwargs...) 
 Base.:-(sets::SBSet...)                     = do_setop(:setdiff, sets) 
 Base.:~(set::SBSet)                         = do_setop(:setdiff,
-                                                       (UniversalSet(), set))
+                                                (UniversalSet(), set))
 """
     complement(set <: SBSet)
 
 generates a complement set
+
+```julia
+julia> complement(@setbuild()) == @setbuild(Any)
+true
+
+julia> ~@setbuild() == @setbuild(Any)
+true
 """
 complement(set::SBSet; kwargs...)           = do_setop(:setdiff,
-                                                       (UniversalSet(), set); kwargs...)
+                                                (UniversalSet(), set); kwargs...)

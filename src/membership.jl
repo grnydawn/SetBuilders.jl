@@ -4,27 +4,46 @@
 # TODO: debug=true, on_nomember=(h->println(describe(h[1].set, mark=h[end].set)))
 # TODO: rewriting set operations to CNF??
 
-function _event(set, eventtype, event, hist, kwargs)
+function _init_sb_kw()
+    return Dict{Symbol, Any}(:set_history=>[], :map_events=>[])
+end
+
+function _event(set, eventtype, event, sb_kw; kwargs...)
 
     if eventtype == :member
-
-        if length(hist) == 0 || hist[1].set != set
-            return event
-        end
+        hist = sb_kw[:set_history]
 
         (haskey(kwargs, :on_member) && event == true &&
-            kwargs[:on_member](hist))
+         kwargs[:on_member] isa Function && kwargs[:on_member](hist))
 
         (haskey(kwargs, :on_nomember) && event == false &&
-            kwargs[:on_nomember](hist))
+         kwargs[:on_nomember] isa Function && kwargs[:on_nomember](hist))
 
-        if hasproperty(hist[1].set, :_meta)
-            (haskey(hist[1].set._meta, :sb_on_member) && event == true &&
-                set._meta[:sb_on_member](hist))
+        (hasfield(typeof(set), :_meta) && haskey(set._meta, :sb_on_member) &&
+         event == true && set._meta[:sb_on_member] isa Function &&
+         set._meta[:sb_on_member](hist))
 
-            (haskey(hist[end].set._meta, :sb_on_nomember) && event == false &&
-                set._meta[:sb_on_nomember](hist))
-        end
+        (hasfield(typeof(set), :_meta) && haskey(set._meta, :sb_on_nomember) &&
+         event == false && set._meta[:sb_on_nomember] isa Function &&
+         set._meta[:sb_on_nomember](hist))
+
+    elseif eventtype == :mapping
+        events = sb_kw[:map_events]
+
+        (haskey(kwargs, :on_mapping) && event == true &&
+         kwargs[:on_mapping] isa Function && kwargs[:on_mapping](events))
+
+        (haskey(kwargs, :on_nomapping) && event == false &&
+         kwargs[:on_nomapping] isa Function && kwargs[:on_nomapping](events))
+
+        (hasfield(typeof(set), :_meta) && haskey(set._meta, :sb_on_mapping) &&
+         event == true && set._meta[:on_mapping] isa Function &&
+         set._meta[:sb_on_mapping](events))
+
+        (hasfield(typeof(set), :_meta) && haskey(set._meta, :sb_on_nomapping) &&
+         event == false && set._meta[:on_nomapping] isa Function &&
+         set._meta[:sb_on_nomapping](events))
+
     else
         error("Unknown event type: $eventtype.")
     end
@@ -51,24 +70,13 @@ function _check_pred(elem, checks, env, names)
     return all_passed
 end
 
-function _check_member(e, d, h, kwargs)
+function _check_member(elem, setpart, sb_kw; kwargs...)
 
-    if length(d) == 1
-        if haskey(kwargs, :_imhist_)
-            return ismember(e, d[1][2]; kwargs...)
-
-        else
-            return ismember(e, d[1][2]; _imhist_=h, kwargs...)
-        end
+    if length(setpart) == 1
+        return ismember(elem, setpart[1][2], sb_kw; kwargs...)
     else
-        for (_e, _d) in zip(e, d)
-            if haskey(kwargs, :_imhist_)
-                ismember(_e, _d[2]; kwargs...) || return false
-
-            else
-                (ismember(_e, _d[2]; _imhist_=h, kwargs...) ||
-                    return false)
-            end
+        for (e, sp) in zip(elem, setpart)
+            ismember(e, sp[2], sb_kw; kwargs...) || return false
         end
         return true
     end
@@ -122,7 +130,8 @@ function do_mapping(
         set::MappedSet, srcelems, mapping,
         srcnames, srcdomain, srcpred,
         dstnames, dstdomain, dstpred,
-        hist, kwargs)
+        sb_kw; on_mapping=nothing, on_nomapping=nothing,
+        on_member=nothing, on_nomember=nothing)
 
     # check if a vector input
     is_vector = srcelems isa Vector
@@ -135,6 +144,8 @@ function do_mapping(
 
     srcenv = deepcopy(set._env)
     _dstenv = deepcopy(set._env)
+
+    events = sb_kw[:map_events]
 
     # generate dst element(s) per each src element
     for srcelem in srcelems
@@ -149,15 +160,23 @@ function do_mapping(
         end
 
         # check srcelem in src domain
-        _check_member(srcelem, srcdomain, hist, kwargs) || continue
-
-        # check if elem passes pred
-        if !_check_pred(srcelem, srcpred, srcenv, srcnames)
-            push!(hist, (set = set, elem = srcelem))
-            _event(set, :member, false, hist, kwargs)
+        if !_check_member(srcelem, srcdomain, sb_kw, on_member=on_member,
+                         on_nomember=on_nomember)
+            push!(events, (event=:source_membership_fail, element=srcelem,
+                           settuple=srcdomain))
+            _event(set, :mapping, false, sb_kw, on_nomapping=on_nomapping)
+            push!(dstelems, nothing)
             continue
         end
 
+        # check if elem passes pred
+        if !_check_pred(srcelem, srcpred, srcenv, srcnames)
+            push!(events, (event=:source_predicate_fail, element=srcelem,
+                           predicate=srcpred))
+            _event(set, :mapping, false, sb_kw, on_nomapping=on_nomapping)
+            push!(dstelems, nothing)
+            continue
+        end
 
         # generate dst elem from srcelem using the srcmap
         try
@@ -186,17 +205,34 @@ function do_mapping(
             # filter doelems
             my_channel = Channel( (c) -> gen_doelems(c, _dstelems, _dstenv, dstnames)) 
 
-            for (dstelem, dstenv) in my_channel
-                _check_member(dstelem, dstdomain, hist, kwargs) || continue
+            elembuf = []
 
-                # check if elem passes pred
-                if !_check_pred(dstelem, dstpred, dstenv, dstnames)
-                    push!(hist, (set = set, elem = dstelem))
-                    _event(set, :member, false, hist, kwargs)
+            for (dstelem, dstenv) in my_channel
+                # check dstelem in target domain
+                if !_check_member(dstelem, dstdomain, sb_kw, on_member=on_member,
+                                 on_nomember=on_nomember)
+                    push!(events, (event=:target_membership_fail, element=dstelem,
+                                   settuple=dstdomain))
                     continue
                 end
 
-                push!(dstelems, dstelem)
+                # check if elem passes pred
+                if !_check_pred(dstelem, dstpred, dstenv, dstnames)
+                    push!(events, (event=:target_predicate_fail, element=dstelem,
+                                   predicate=dstpred))
+                    continue
+                end
+
+                push!(elembuf, dstelem)
+            end
+
+
+            if length(elembuf) > 0
+                append!(dstelems, elembuf)
+
+            else
+                _event(set, :mapping, false, sb_kw, on_nomapping=on_nomapping)
+                push!(dstelems, nothing)
             end
 
         catch err
@@ -206,260 +242,257 @@ function do_mapping(
     end
 
     if is_vector
+        (length(dstelems) > 0 && all(e->!(e isa Nothing), dstelems) &&
+            _event(set, :mapping, true, sb_kw, on_mapping=on_mapping))
         return dstelems
 
     elseif length(dstelems) == 0
         return nothing
 
     elseif length(dstelems) == 1
+       (!(dstelems[1] isa Nothing) && _event(set, :mapping, true, sb_kw,
+                                              on_mapping=on_mapping))
         return dstelems[1]
 
     else
+        (length(dstelems) > 0 && all(e->!(e isa Nothing), dstelems) &&
+            _event(set, :mapping, true, sb_kw, on_mapping=on_mapping))
         return dstelems
     end
 end
 
 """
-    bmap(set <: SBSet, elems; kwargs...)
+    bmap(set <: SBSet, elems)
 
-generates element(s) in domain of a MappedSet.
+convert `elems` in the argument to element(s) in domain of a MappedSet.
 """
-function bmap(set::MappedSet, coelems; hist=[], kwargs...)
+function bmap(set::MappedSet, coelems, sb_kw=nothing; on_mapping=nothing,
+        on_nomapping=nothing, on_member=nothing, on_nomember=nothing)
 
+    sb_kw = sb_kw isa Nothing ? _init_sb_kw() : sb_kw
     donames, conames = get_setnames(set)
 
     return do_mapping(
             set, coelems, set._backward_map,
             conames, set._codomain, set._codomain_pred,
             donames, set._domain, set._domain_pred,
-            hist, kwargs)
+            sb_kw, on_mapping=on_mapping, on_nomapping=on_nomapping,
+            on_member=on_member, on_nomember=on_nomember)
 end
 
 """
-    fmap(set <: SBSet, elems; kwargs...)
+    fmap(set <: SBSet, elems)
 
-generates element(s) in codomain of a MappedSet.
+convert `elems` in the argument to element(s) in codomain of a MappedSet.
 """
-function fmap(set::MappedSet, doelems; hist=[], kwargs...)
+function fmap(set::MappedSet, doelems, sb_kw=nothing; on_mapping=nothing,
+        on_nomapping=nothing, on_member=nothing, on_nomember=nothing)
 
+    sb_kw = sb_kw isa Nothing ? _init_sb_kw() : sb_kw
     donames, conames = get_setnames(set)
 
     return do_mapping(
             set, doelems, set._forward_map,
             donames, set._domain, set._domain_pred,
             conames, set._codomain, set._codomain_pred,
-            hist, kwargs)
+            sb_kw, on_mapping=on_mapping, on_nomapping=on_nomapping,
+            on_member=on_member, on_nomember=on_nomember)
 end
 
-function ismember(elem, set::EnumerableSet; kwargs...)
+function ismember(elem, set::EnumerableSet, sb_kw=nothing; on_member=nothing,
+        on_nomember=nothing) :: Bool
 
-    hist = get(kwargs, :_imhist_, [])
-    push!(hist, (set = set, elem = elem))
+    sb_kw = sb_kw isa Nothing ? _init_sb_kw() : sb_kw
+    push!(sb_kw[:set_history], (set = set, elem = elem))
 
     type_elem = typeof(elem)
 
     # NOTE: having SBSet as an element is not supported yet
     #       due to lack of the is_equal function of SBSets
     if haskey(set._elems, type_elem)
-        return _event(set, :member, elem in set._elems[type_elem], hist, kwargs)
+        return _event(set, :member, elem in set._elems[type_elem], sb_kw,
+                      on_member=on_member, on_nomember=on_nomember)
     else
-        return _event(set, :member, false, hist, kwargs)
+        return _event(set, :member, false, sb_kw, on_nomember=on_nomember)
     end
 
 end
 
-function ismember(elem, set::PredicateSet; kwargs...) :: Bool
+function ismember(elem, set::PredicateSet, sb_kw=nothing; on_member=nothing,
+        on_nomember=nothing) :: Bool
 
-    hist = get(kwargs, :_imhist_, [])
-    push!(hist, (set = set, elem = elem))
+    sb_kw = sb_kw isa Nothing ? _init_sb_kw() : sb_kw
+    push!(sb_kw[:set_history], (set = set, elem = elem))
 
     if length(set._vars) == 1
+        res = ismember(elem, set._vars[1][2], sb_kw)
 
-        if haskey(kwargs, :_imhist_)
-            res = ismember(elem, set._vars[1][2]; kwargs...)
-        else
-            res = ismember(elem, set._vars[1][2]; _imhist_=hist, kwargs...)
-        end
+        (res == false && return _event(set, :member, res, sb_kw,
+                                       on_nomember=on_nomember))
 
-        res == false && return _event(set, :member, res, hist, kwargs)
+        push!(sb_kw[:set_history], (set = set, elem = elem))
 
         if set._pred isa Bool
-            push!(hist, (set = set, elem = elem))
-            return _event(set, :member, set._pred, hist, kwargs)
+            return _event(set, :member, set._pred, sb_kw, on_member=on_member,
+                         on_nomember=on_nomember)
 
         elseif set._pred isa Nothing
-            push!(hist, (set = set, elem = elem))
-            return _event(set, :member, true, hist, kwargs)
+            return _event(set, :member, true, sb_kw, on_member=on_member)
 
         else
             varmap = Dict{Symbol, Any}(set._vars[1][1] => elem)
-            push!(hist, (set = set, elem = elem))
-            return _event(set, :member, sb_eval(set._pred,
-                                merge(varmap, set._env)), hist, kwargs)
+            return _event(set, :member,
+                          sb_eval(set._pred, merge(varmap, set._env)), sb_kw,
+                          on_member=on_member, on_nomember=on_nomember)
         end
 
     else
         if length(set._vars) != length(elem)
-            push!(hist, (set = set, elem = elem))
-            return _event(set, :member, false, hist, kwargs)
+            return _event(set, :member, false, sb_kw, on_nomember=on_nomember)
         end
 
         varmap = Dict{Symbol, Any}()
 
         for ((v, s), e) in zip(set._vars, elem)
-
-            if haskey(kwargs, :_imhist_)
-                res = ismember(e, s; kwargs...)
-            else
-                res = ismember(e, s; _imhist_=hist, kwargs...)
-            end
-
-            res == false && return _event(set, :member, res, hist, kwargs)
+            res = ismember(e, s, sb_kw)
+            res == false && return _event(set, :member, res, sb_kw,
+                                          on_nomember=on_nomember)
             
             if v isa Symbol
                 varmap[v] = e
             end
         end
 
-        push!(hist, (set = set, elem = elem))
+        push!(sb_kw[:set_history], (set = set, elem = elem))
 
         if set._pred isa Bool
-            return _event(set, :member, set._pred, hist, kwargs)
+            return _event(set, :member, set._pred, sb_kw, on_member=on_member,
+                         on_nomember=on_nomember)
 
         elseif set._pred isa Nothing
-            return _event(set, :member, true, hist, kwargs)
+            return _event(set, :member, true, sb_kw, on_member=on_member)
 
         else
             return _event(set, :member, sb_eval(set._pred,
-                            merge(varmap, set._env)), hist, kwargs)
+                            merge(varmap, set._env)), sb_kw,
+                          on_member=on_member, on_nomember=on_nomember)
         end
     end 
 
-    push!(hist, (set = set, elem = elem))
-    return _event(set, :member, false, hist, kwargs)
+    error("This line should not be excuted.")
+    return false
 end
 
-function ismember(coelem, set::MappedSet; kwargs...)
+function ismember(coelem, set::MappedSet, sb_kw=nothing; on_member=nothing,
+        on_nomember=nothing) :: Bool
 
-    hist = get(kwargs, :_imhist_, [])
-    push!(hist, (set = set, elem = coelem))
+    sb_kw = sb_kw isa Nothing ? _init_sb_kw() : sb_kw
+    push!(sb_kw[:set_history], (set = set, elem = coelem))
 
-    doelems = bmap(set, [coelem]; hist=hist, kwargs...)
+    doelems = bmap(set, [coelem], sb_kw)
+
+    #doelems = bmap(set, [coelem], sb_kw, on_member=on_member,
+    #               on_nomember=on_nomember)
 
     if length(doelems) == 0
-        return _event(set, :member, false, hist, kwargs)
-    end
+        return _event(set, :member, false, sb_kw, on_nomember=on_nomember)
+    else
+        # per every generated elem in domain
+        for doelem in doelems
+            doelem isa Nothing && continue
 
-    # per every generated elem in domain
-    for doelem in doelems
+            # generate elem in co-domain
+            coelems2 = fmap(set, [doelem], sb_kw)
 
-        # generate elem in co-domain
-        coelems2 = fmap(set, [doelem]; hist=hist, kwargs...)
-
-        # check if generate elem in co-domain equals to
-        # the original elem in codomain
-        for coelem2 in coelems2
-            if coelem == coelem2
-                push!(hist, (set = set, elem = coelem))
-                return _event(set, :member, true, hist, kwargs)
+            # check if generate elem in co-domain equals to
+            # the original elem in codomain
+            for coelem2 in coelems2
+                if coelem == coelem2
+                    push!(sb_kw[:set_history], (set = set, elem = coelem))
+                    return _event(set, :member, true, sb_kw, on_member=on_member)
+                end
             end
         end
+
     end
 
-    push!(hist, (set = set, elem = coelem))
-    return _event(set, :member, false, hist, kwargs)
+    return false
 end
 
-function ismember(elem, set::CompositeSet; kwargs...)
+function ismember(elem, set::CompositeSet, sb_kw=nothing; on_member=nothing,
+        on_nomember=nothing) :: Bool
 
-    hist = get(kwargs, :_imhist_, [])
-    push!(hist, (set = set, elem = elem))
+    sb_kw = sb_kw isa Nothing ? _init_sb_kw() : sb_kw
+    push!(sb_kw[:set_history], (set = set, elem = elem))
 
-    length(set._sets) == 0 && return _event(set, :member, false, hist, kwargs)
+    length(set._sets) == 0 && return _event(set, :member, false, sb_kw,
+                                           on_nomember=on_nomember)
 
     res = false
 
     if set._op == :union
-        if haskey(kwargs, :_imhist_)
-            res = any(s -> ismember(elem, s; kwargs...), set._sets)
-        else
-            res = any(s -> ismember(elem, s; _imhist_=hist,
-                        kwargs...), set._sets)
-        end
-
-        res == false && push!(hist, (set = set, elem = elem))
+        res = any(s -> ismember(elem, s, sb_kw), set._sets)
+        res == false && push!(sb_kw[:set_history], (set = set, elem = elem))
 
     elseif set._op == :intersect
-        if haskey(kwargs, :_imhist_)
-            _res = any(s -> !ismember(elem, s; kwargs...), set._sets)
-        else
-            _res = any(s -> !ismember(elem, s, ; _imhist_=hist,
-                        kwargs...), set._sets)
-        end
+        _res = any(s -> !ismember(elem, s, sb_kw), set._sets)
         res = !_res
-
-        res == true && push!(hist, (set = set, elem = elem))
+        res == true && push!(sb_kw[:set_history], (set = set, elem = elem))
 
     elseif set._op == :setdiff
-
-        if haskey(kwargs, :_imhist_)
-            _res = (!ismember(elem, set._sets[1]; kwargs...) ||
-                any(s -> ismember(elem, s; kwargs...), set._sets[2:end]))
-        else
-            _res = (!ismember(elem, set._sets[1]; _imhist_=hist, kwargs...) ||
-                    any(s -> ismember(elem, s; _imhist_=hist,
-                                        kwargs...), set._sets[2:end]))
-        end
-
+        _res = (!ismember(elem, set._sets[1], sb_kw) ||
+                any(s -> ismember(elem, s, sb_kw), set._sets[2:end]))
         res = !_res
-        push!(hist, (set = set, elem = elem))
+        push!(sb_kw[:set_history], (set = set, elem = elem))
 
     elseif set._op == :symdiff
-
         work_set = set._sets[1]
 
         for s in set._sets[2:end]
             work_set = union((work_set - s), (s - work_set))
         end
 
-        if haskey(kwargs, :_imhist_)
-            res = ismember(elem, work_set; kwargs...)
-        else
-            res = ismember(elem, work_set; _imhist_=hist, kwargs...)
-        end
-
-        push!(hist, (set = set, elem = elem))
+        res = ismember(elem, work_set, sb_kw)
+        push!(sb_kw[:set_history], (set = set, elem = elem))
 
     else
         println("WARN: set operation, $(set._op), is not implemented yet.")
     end
 
-    return _event(set, :member, res, hist, kwargs)
-
+    return _event(set, :member, res, sb_kw, on_member=on_member,
+                  on_nomember=on_nomember)
 end
 
-function ismember(elem, set::TypeSet; kwargs...)
+function ismember(elem, set::TypeSet, sb_kw=nothing; on_member=nothing,
+        on_nomember=nothing)
 
-    hist = get(kwargs, :_imhist_, [])
-    push!(hist, (set = set, elem = elem))
+    sb_kw = sb_kw isa Nothing ? _init_sb_kw() : sb_kw
+    push!(sb_kw[:set_history], (set = set, elem = elem))
 
-    return _event(set, :member, elem isa find_param(set), hist, kwargs)
+    return _event(set, :member, elem isa find_param(set), sb_kw,
+        on_member=on_member, on_nomember=on_nomember)
 end
 
-function ismember(elem, set::UniversalSet; kwargs...)
+function ismember(elem, set::UniversalSet, sb_kw=nothing; on_member=nothing,
+        on_nomember=nothing)
 
-    hist = get(kwargs, :_imhist_, [])
-    push!(hist, (set = set, elem = elem))
+    sb_kw = sb_kw isa Nothing ? _init_sb_kw() : sb_kw
+    push!(sb_kw[:set_history], (set = set, elem = elem))
 
-    return _event(set, :member, true, hist, kwargs)
+    on_member isa Function && on_member(sb_kw[:set_history])
+
+    return true
 end
 
-function ismember(elem, set::EmptySet; kwargs...)
+function ismember(elem, set::EmptySet, sb_kw=nothing; on_member=nothing,
+        on_nomember=nothing)
 
-    hist = get(kwargs, :_imhist_, [])
-    push!(hist, (set = set, elem = elem))
+    sb_kw = sb_kw isa Nothing ? _init_sb_kw() : sb_kw
+    push!(sb_kw[:set_history], (set = set, elem = elem))
 
-    return _event(set, :member, false, hist, kwargs)
+    on_nomember isa Function && on_nomember(sb_kw[:set_history])
+
+    return false
 end
 
 Base.:in(e, set::SBSet)         = ismember(e, set)
@@ -467,15 +500,18 @@ Base.:in(e, set::EmptySet)      = false
 Base.:in(e, set::UniversalSet)  = true
 
 """
-    ismember(elem, set <: SBSet; kwargs...)
+    ismember(elem, set <: SBSet; on_member::Function, on_nomember::Function)
 
 returns `true` if `elem` is a member of `set`.
 Otherwise returns false.
 
-## `on_member` and `on_nomember` keyword arguments
+# Keywords
+
+## `on_member`
 A callback function registered with `on_member` 
 will be called when `elem` is known to be a member of `set`.
 
+## `on_nomember`
 A callback function registered with `on_nomember` 
 will be called when `elem` is known not to be a member of `set`.
 

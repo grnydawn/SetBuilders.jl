@@ -13,6 +13,13 @@
 @test bmap(MAPD1, [5, 14]) == [0, 9]
 @test !(bmap(MAPD1, [4, 14]) == [-1, 9])
 
+P1 = events -> (@test length(events) == 0) 
+@test fmap(MAPD1, [0, 9], on_mapping=P1) == [5, 14]
+
+F1 = events -> (@test (length(events) == 1 &&
+                       events[1].event == :source_membership_fail))
+@test !(fmap(MAPD1, [-1, 9], on_nomapping=F1) == [4, 14])
+
 #MAPD2 = @setbuild(x in PRED4, z in I, z = x + 5, x = func(z), func=myfunc)
 @test fmap(MAPD2, [5, 14]) == [10, 19]
 @test !(fmap(MAPD2, [4, 14]) == [9, 19])
