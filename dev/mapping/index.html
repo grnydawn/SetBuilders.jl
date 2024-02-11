@@ -27,21 +27,7 @@ julia&gt; elem2 = fmap(M1, [(1,1), (2,2)]) # Two domain elements are mapped to t
 julia&gt; elem3 = fmap(M1, (0.1, 0.1))     # No element is generated because 0.1 is not Integer type
 
 julia&gt; elem3 isa Nothing
-true</code></pre><p><code>elem1</code> is generated from <code>(1, 1)</code> domain element by appling the forward mapping &quot;mystruct(x, y)&quot;.</p><p>A vector of a two pairs generated in <code>elem2</code> by specifying a vector at the second argument of <code>fmap</code>.</p><p><code>elem3</code> is nothing indicating that no element is generated because <code>0.1</code> is not a member of set <code>I</code>.</p><p>We can further investigate to know why <code>elem3</code> is nothing using SetBuilders&#39; set description and set event features shown below:</p><pre><code class="language-julia hljs">julia&gt; F1 = hist -&gt; println(describe(hist[1].set , mark=hist[end].set))
-#1 (generic function with 1 method)
-
-julia&gt; elem3 = fmap(M1, (0.1, 0.1), on_nomember=F1)
-
-{ x ∈ A, y ∈ B }
-         /\ B-MAP
-      || ||
-F-MAP \/
-{ z ∈ C }, where
- =&gt; A = { x ∈ ::Integer }
- =&gt; B = { x ∈ ::Integer }
-    F-MAP: z = mystruct(x, y)
-    B-MAP: y = z.b, x = z.a
-    C = { x ∈ ::MyStruct }</code></pre><p>See <a href="../event/#Set-Event">Set Event</a> to learn more about set event and set description.</p><h2 id="Backward-mapping-(bmap)"><a class="docs-heading-anchor" href="#Backward-mapping-(bmap)">Backward mapping (bmap)</a><a id="Backward-mapping-(bmap)-1"></a><a class="docs-heading-anchor-permalink" href="#Backward-mapping-(bmap)" title="Permalink"></a></h2><p>Backward mapping maps from the elements in the codomain to the ones in domain.</p><p>The usage of <code>bmap</code> is exactly the same to <code>fmap</code> except the direction of generation.</p><pre><code class="language-julia hljs">julia&gt; elem4 = bmap(M1, MyStruct(1, 1))
+true</code></pre><p><code>elem1</code> is generated from <code>(1, 1)</code> domain element by appling the forward mapping &quot;mystruct(x, y)&quot;.</p><p>A vector of a two pairs generated in <code>elem2</code> by specifying a vector at the second argument of <code>fmap</code>.</p><p><code>elem3</code> is nothing indicating that no element is generated because <code>0.1</code> is not a member of set <code>I</code>.</p><h2 id="Backward-mapping-(bmap)"><a class="docs-heading-anchor" href="#Backward-mapping-(bmap)">Backward mapping (bmap)</a><a id="Backward-mapping-(bmap)-1"></a><a class="docs-heading-anchor-permalink" href="#Backward-mapping-(bmap)" title="Permalink"></a></h2><p>Backward mapping maps from the elements in the codomain to the ones in domain.</p><p>The usage of <code>bmap</code> is exactly the same to <code>fmap</code> except the direction of generation.</p><pre><code class="language-julia hljs">julia&gt; elem4 = bmap(M1, MyStruct(1, 1))
 (1, 1)
 
 julia&gt; elem4 == (1, 1)
@@ -55,4 +41,4 @@ julia&gt; elem5 = bmap(M1, MyStruct(0,1, 0.1))
 julia&gt; elem3 = fmap(M1, (0.1, 0.1))     # No element is generated because 0.1 is not Integer type
 
 julia&gt; elem3 isa Nothing
-true</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../event/">« Set Event</a><a class="docs-footer-nextpage" href="../sharing/">Set Sharing »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="auto">Automatic (OS)</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.2.1 on <span class="colophon-date" title="Tuesday 6 February 2024 19:03">Tuesday 6 February 2024</span>. Using Julia version 1.9.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+true</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../event/">« Set Event</a><a class="docs-footer-nextpage" href="../sharing/">Set Sharing »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="auto">Automatic (OS)</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.2.1 on <span class="colophon-date" title="Sunday 11 February 2024 03:37">Sunday 11 February 2024</span>. Using Julia version 1.9.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
