@@ -195,6 +195,7 @@ true
 
 julia> ~@setbuild() == @setbuild(Any)
 true
+```
 """
 complement(set::SBSet; kwargs...)           = do_setop(:setdiff,
                                                 (UniversalSet(), set); kwargs...)

@@ -557,7 +557,11 @@ MappedSet((x ∈ TypeSet(Integer)) -> (y ∈ TypeSet(Integer)))
 
 ## Keyword arguments
 The main usage of keyword arguments is to provide expressions
-inside of `@setbuild` with the objects defined outside of `@setbuild`.
+inside of `@setbuild` with the references defined outside of `@setbuild`.
+
+For example, in the following code example, `c=k` keyword
+argument provides `@setbuild` macro with the value of `k` so that
+`y = x + c` or `x = y - c` can be correctly evaluated.
 
 ```julia-repl
 julia> I = @setbuild(Integer)
@@ -570,16 +574,14 @@ julia> @setbuild(x in I, y in I, y = x + c, x = y - c, c=k)
 MappedSet((x ∈ TypeSet(Integer)) -> (y ∈ TypeSet(Integer)))
 ```
 
-# Keywords
-
-Keyword arguments are used to provide `@setbuild` macro with named
-references. For example, in previous code examples, `c=k` keyword
-argument provides `@setbuild` macro with the value of `k` so that
-`y = x + c` or `x = y - c` can be correctly evaluated.
-
 !!! note
-    keyword names starting with "sb_" are reserved for SetBuilders
-    internal uses.
+    Keyword names starting with sb_ are reserved for internal uses by
+    SetBuilders.
+    The keyword arguments sb_on_member and sb_on_nomember
+    are equivalent to the on_member and on_nomember keyword arguments
+    for the ismember function. One difference with the sb_on_* keywords
+    is that their effects apply to every membership check after the set's
+    creation.
 """
 macro setbuild(args...)
 

@@ -7,8 +7,8 @@ Main module for `SetBuilders` -- Julia Package for Predicate and Enumerable Sets
 - [`@setpkg`](@ref): Loads a set from a Julia module.
 - [`ismember`](@ref)/`in`/`∈`: Checks if an object is a member of a set.
 - [`describe`](@ref): Generates a set description string.
-- [`fmap`](@ref): Converts an element in the domain to one in the codomain.
-- [`bmap`](@ref): Converts an element in the codomain to one in the domain.
+- [`fmap`](@ref): Converts an element in the domain to element(s) in the codomain.
+- [`bmap`](@ref): Converts an element in the codomain to element(s) in the domain.
 - [`complement`](@ref)/`~`: Performs the set complement operation.
 - [`SBSet`](@ref): Represents the top-level type of all SetBuilders sets.
 

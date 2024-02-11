@@ -262,9 +262,16 @@ function do_mapping(
 end
 
 """
-    bmap(set <: SBSet, elems)
+    bmap(set::MappedSet, elems; on_mapping::Function, on_nomapping::Function,
+            on_member::Function, on_nomember::Function)
 
 convert `elems` in the argument to element(s) in domain of a MappedSet.
+
+# Keywords
+* **on_mapping**: A callback function that will be called when a mapping is successful.
+* **on_nomapping**: A callback function that will be called when a mapping is not successful.
+* **on_member**: A callback function that will be called when a membership check is successful.
+* **on_nomember**: A callback function that will be called when a membership check is not successful.
 """
 function bmap(set::MappedSet, coelems, sb_kw=nothing; on_mapping=nothing,
         on_nomapping=nothing, on_member=nothing, on_nomember=nothing)
@@ -281,9 +288,16 @@ function bmap(set::MappedSet, coelems, sb_kw=nothing; on_mapping=nothing,
 end
 
 """
-    fmap(set <: SBSet, elems)
+    fmap(set::MappedSet, elems; on_mapping::Function, on_nomapping::Function,
+            on_member::Function, on_nomember::Function)
 
 convert `elems` in the argument to element(s) in codomain of a MappedSet.
+
+# Keywords
+* **on_mapping**: A callback function that will be called when a mapping is successful.
+* **on_nomapping**: A callback function that will be called when a mapping is not successful.
+* **on_member**: A callback function that will be called when a membership check is successful.
+* **on_nomember**: A callback function that will be called when a membership check is not successful.
 """
 function fmap(set::MappedSet, doelems, sb_kw=nothing; on_mapping=nothing,
         on_nomapping=nothing, on_member=nothing, on_nomember=nothing)
