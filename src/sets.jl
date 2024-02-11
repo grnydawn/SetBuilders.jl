@@ -34,9 +34,7 @@ julia> 1 in E
 false
 ```
 """
-struct EmptySet <: SBSet
-    _meta::Dict{Symbol, Any}
-end
+struct EmptySet <: SBSet end
 
 function Base.show(io::IO, s::EmptySet)
     print(io, "EmptySet()")
@@ -58,9 +56,7 @@ julia> 1 in U
 true
 ```
 """
-struct UniversalSet <: SBSet
-    _meta::Dict{Symbol, Any}
-end
+struct UniversalSet <: SBSet end
 
 function Base.show(io::IO, s::UniversalSet)
     print(io, "UniversalSet()")

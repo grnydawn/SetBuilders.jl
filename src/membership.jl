@@ -19,11 +19,13 @@ function _event(set, eventtype, event, sb_kw; kwargs...)
         (haskey(kwargs, :on_nomember) && event == false &&
          kwargs[:on_nomember] isa Function && kwargs[:on_nomember](hist))
 
-        (haskey(set._meta, :sb_on_member) && event == true &&
-         set._meta[:sb_on_member] isa Function && set._meta[:sb_on_member](hist))
+        (hasfield(typeof(set), :_meta) && haskey(set._meta, :sb_on_member) &&
+         event == true && set._meta[:sb_on_member] isa Function &&
+         set._meta[:sb_on_member](hist))
 
-        (haskey(set._meta, :sb_on_nomember) && event == false &&
-         set._meta[:sb_on_nomember] isa Function && set._meta[:sb_on_nomember](hist))
+        (hasfield(typeof(set), :_meta) && haskey(set._meta, :sb_on_nomember) &&
+         event == false && set._meta[:sb_on_nomember] isa Function &&
+         set._meta[:sb_on_nomember](hist))
 
     elseif eventtype == :mapping
         events = sb_kw[:map_events]
@@ -34,11 +36,13 @@ function _event(set, eventtype, event, sb_kw; kwargs...)
         (haskey(kwargs, :on_nomapping) && event == false &&
          kwargs[:on_nomapping] isa Function && kwargs[:on_nomapping](events))
 
-        (haskey(set._meta, :sb_on_mapping) && event == true &&
-         set._meta[:on_mapping] isa Function && set._meta[:sb_on_mapping](events))
+        (hasfield(typeof(set), :_meta) && haskey(set._meta, :sb_on_mapping) &&
+         event == true && set._meta[:on_mapping] isa Function &&
+         set._meta[:sb_on_mapping](events))
 
-        (haskey(set._meta, :sb_on_nomapping) && event == false &&
-         set._meta[:on_nomapping] isa Function && set._meta[:sb_on_nomapping](events))
+        (hasfield(typeof(set), :_meta) && haskey(set._meta, :sb_on_nomapping) &&
+         event == false && set._meta[:on_nomapping] isa Function &&
+         set._meta[:sb_on_nomapping](events))
 
     else
         error("Unknown event type: $eventtype.")
@@ -159,7 +163,7 @@ function do_mapping(
         if !_check_member(srcelem, srcdomain, sb_kw, on_member=on_member,
                          on_nomember=on_nomember)
             push!(events, (event=:source_membership_fail, element=srcelem,
-                           source_domain=srcdomain))
+                           settuple=srcdomain))
             _event(set, :mapping, false, sb_kw, on_nomapping=on_nomapping)
             push!(dstelems, nothing)
             continue
@@ -168,7 +172,7 @@ function do_mapping(
         # check if elem passes pred
         if !_check_pred(srcelem, srcpred, srcenv, srcnames)
             push!(events, (event=:source_predicate_fail, element=srcelem,
-                           source_predicate=srcpred))
+                           predicate=srcpred))
             _event(set, :mapping, false, sb_kw, on_nomapping=on_nomapping)
             push!(dstelems, nothing)
             continue
@@ -208,14 +212,14 @@ function do_mapping(
                 if !_check_member(dstelem, dstdomain, sb_kw, on_member=on_member,
                                  on_nomember=on_nomember)
                     push!(events, (event=:target_membership_fail, element=dstelem,
-                                   target_domain=dstdomain))
+                                   settuple=dstdomain))
                     continue
                 end
 
                 # check if elem passes pred
                 if !_check_pred(dstelem, dstpred, dstenv, dstnames)
                     push!(events, (event=:target_predicate_fail, element=dstelem,
-                                   target_predicate=dstpred))
+                                   predicate=dstpred))
                     continue
                 end
 
@@ -228,7 +232,7 @@ function do_mapping(
 
             else
                 _event(set, :mapping, false, sb_kw, on_nomapping=on_nomapping)
-                append!(dstelems, nothing)
+                push!(dstelems, nothing)
             end
 
         catch err
@@ -238,26 +242,21 @@ function do_mapping(
     end
 
     if is_vector
-        _event(set, :mapping, length(dstelems) > 0 && all(e->!(e isa Nothing), dstelems),
-               sb_kw, on_mapping=on_mapping)
-
+        (length(dstelems) > 0 && all(e->!(e isa Nothing), dstelems) &&
+            _event(set, :mapping, true, sb_kw, on_mapping=on_mapping))
         return dstelems
 
     elseif length(dstelems) == 0
-        _event(set, :mapping, false, sb_kw, on_nomapping=on_nomapping)
-
         return nothing
 
     elseif length(dstelems) == 1
-        _event(set, :mapping, !(dstelems[1] isa Nothing), sb_kw,
-               on_mapping=on_mapping, on_nomapping=on_nomapping)
-
+       (!(dstelems[1] isa Nothing) && _event(set, :mapping, true, sb_kw,
+                                              on_mapping=on_mapping))
         return dstelems[1]
 
     else
-        _event(set, :mapping, length(dstelems) > 0 && all(e->!(e isa Nothing), dstelems),
-               sb_kw, on_mapping=on_mapping, on_nomapping=on_nomapping)
-
+        (length(dstelems) > 0 && all(e->!(e isa Nothing), dstelems) &&
+            _event(set, :mapping, true, sb_kw, on_mapping=on_mapping))
         return dstelems
     end
 end
@@ -268,7 +267,7 @@ end
 convert `elems` in the argument to element(s) in domain of a MappedSet.
 """
 function bmap(set::MappedSet, coelems, sb_kw=nothing; on_mapping=nothing,
-        on_nomapping=nothing)
+        on_nomapping=nothing, on_member=nothing, on_nomember=nothing)
 
     sb_kw = sb_kw isa Nothing ? _init_sb_kw() : sb_kw
     donames, conames = get_setnames(set)
@@ -277,7 +276,8 @@ function bmap(set::MappedSet, coelems, sb_kw=nothing; on_mapping=nothing,
             set, coelems, set._backward_map,
             conames, set._codomain, set._codomain_pred,
             donames, set._domain, set._domain_pred,
-            sb_kw, on_mapping=on_mapping, on_nomapping=on_nomapping)
+            sb_kw, on_mapping=on_mapping, on_nomapping=on_nomapping,
+            on_member=on_member, on_nomember=on_nomember)
 end
 
 """
@@ -286,7 +286,7 @@ end
 convert `elems` in the argument to element(s) in codomain of a MappedSet.
 """
 function fmap(set::MappedSet, doelems, sb_kw=nothing; on_mapping=nothing,
-        on_nomapping=nothing)
+        on_nomapping=nothing, on_member=nothing, on_nomember=nothing)
 
     sb_kw = sb_kw isa Nothing ? _init_sb_kw() : sb_kw
     donames, conames = get_setnames(set)
@@ -295,7 +295,8 @@ function fmap(set::MappedSet, doelems, sb_kw=nothing; on_mapping=nothing,
             set, doelems, set._forward_map,
             donames, set._domain, set._domain_pred,
             conames, set._codomain, set._codomain_pred,
-            sb_kw, on_mapping=on_mapping, on_nomapping=on_nomapping)
+            sb_kw, on_mapping=on_mapping, on_nomapping=on_nomapping,
+            on_member=on_member, on_nomember=on_nomember)
 end
 
 function ismember(elem, set::EnumerableSet, sb_kw=nothing; on_member=nothing,
@@ -388,31 +389,34 @@ function ismember(coelem, set::MappedSet, sb_kw=nothing; on_member=nothing,
     sb_kw = sb_kw isa Nothing ? _init_sb_kw() : sb_kw
     push!(sb_kw[:set_history], (set = set, elem = coelem))
 
-    doelems = bmap(set, [coelem], sb_kw, on_member=on_member,
-                   on_nomember=on_nomember)
+    doelems = bmap(set, [coelem], sb_kw)
+
+    #doelems = bmap(set, [coelem], sb_kw, on_member=on_member,
+    #               on_nomember=on_nomember)
 
     if length(doelems) == 0
         return _event(set, :member, false, sb_kw, on_nomember=on_nomember)
-    end
+    else
+        # per every generated elem in domain
+        for doelem in doelems
+            doelem isa Nothing && continue
 
-    # per every generated elem in domain
-    for doelem in doelems
+            # generate elem in co-domain
+            coelems2 = fmap(set, [doelem], sb_kw)
 
-        # generate elem in co-domain
-        coelems2 = fmap(set, [doelem], sb_kw)
-
-        # check if generate elem in co-domain equals to
-        # the original elem in codomain
-        for coelem2 in coelems2
-            if coelem == coelem2
-                push!(sb_kw[:set_history], (set = set, elem = coelem))
-                return _event(set, :member, true, sb_kw, on_member=on_member)
+            # check if generate elem in co-domain equals to
+            # the original elem in codomain
+            for coelem2 in coelems2
+                if coelem == coelem2
+                    push!(sb_kw[:set_history], (set = set, elem = coelem))
+                    return _event(set, :member, true, sb_kw, on_member=on_member)
+                end
             end
         end
+
     end
 
-    push!(sb_kw[:set_history], (set = set, elem = coelem))
-    return _event(set, :member, false, sb_kw, on_nomember=on_nomember)
+    return false
 end
 
 function ismember(elem, set::CompositeSet, sb_kw=nothing; on_member=nothing,
@@ -475,18 +479,20 @@ function ismember(elem, set::UniversalSet, sb_kw=nothing; on_member=nothing,
     sb_kw = sb_kw isa Nothing ? _init_sb_kw() : sb_kw
     push!(sb_kw[:set_history], (set = set, elem = elem))
 
-    return _event(set, :member, true, sb_kw, on_member=on_member,
-                  on_nomember=on_nomember)
+    on_member isa Function && on_member(sb_kw[:set_history])
+
+    return true
 end
 
 function ismember(elem, set::EmptySet, sb_kw=nothing; on_member=nothing,
-        on_nomembrer=nothing)
+        on_nomember=nothing)
 
     sb_kw = sb_kw isa Nothing ? _init_sb_kw() : sb_kw
     push!(sb_kw[:set_history], (set = set, elem = elem))
 
-    return _event(set, :member, false, sb_kw, on_member=on_member,
-                  on_nomember=on_nomember)
+    on_nomember isa Function && on_nomember(sb_kw[:set_history])
+
+    return false
 end
 
 Base.:in(e, set::SBSet)         = ismember(e, set)

@@ -230,7 +230,7 @@ function proc_build_onearg(arg, env, meta)
 
     if arg isa Symbol
         if arg == :Any
-            return :(SetBuilders.UniversalSet($meta))
+            return :(SetBuilders.UniversalSet())
 
         else
             arg = esc(arg)
@@ -589,7 +589,7 @@ macro setbuild(args...)
 
     if NARGS == 0
         env, meta   = split_kwargs(kwargs)
-        return :(SetBuilders.EmptySet($meta))
+        return :(SetBuilders.EmptySet())
 
     elseif NARGS == 1
         env, meta   = split_kwargs(kwargs)

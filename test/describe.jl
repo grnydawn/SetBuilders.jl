@@ -41,7 +41,7 @@
        describe(ENUM3) == "{ x ∈ (::Int64*2, ::Float64*1) }")
 
 #ENUM4 = @setbuild(Dict{String, String}[])
-@test describe(ENUM4) == "{ x ∈ ::Dict{String, String}*1 }"
+@test describe(ENUM4) == "{ x ∈ ::Dict{String, String}*0 }"
 
 ## Cartesian sets
 #CART1 = @setbuild((I, I))

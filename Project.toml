@@ -1,7 +1,7 @@
 name = "SetBuilders"
 uuid = "0ea2c469-657e-49fe-9dbc-af43455b405b"
 authors = ["Youngsung Kim <youngsung.kim.act2@gmail.com>"]
-version = "0.1.7"
+version = "0.1.8"
 
 [deps]
 InteractiveUtils = "b77e0a4c-d291-57a0-90e8-8db25a27a240"

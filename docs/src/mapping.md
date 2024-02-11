@@ -97,28 +97,6 @@ second argument of `fmap`.
 `elem3` is nothing indicating that no element is generated because `0.1` is
 not a member of set `I`.
 
-We can further investigate to know why `elem3` is nothing using SetBuilders'
-set description and set event features shown below:
-
-```julia
-julia> F1 = hist -> println(describe(hist[1].set , mark=hist[end].set))
-#1 (generic function with 1 method)
-
-julia> elem3 = fmap(M1, (0.1, 0.1), on_nomember=F1)
-
-{ x ∈ A, y ∈ B }
-         /\ B-MAP
-      || ||
-F-MAP \/
-{ z ∈ C }, where
- => A = { x ∈ ::Integer }
- => B = { x ∈ ::Integer }
-    F-MAP: z = mystruct(x, y)
-    B-MAP: y = z.b, x = z.a
-    C = { x ∈ ::MyStruct }
-```
-See [Set Event](@ref) to learn more about set event and set description.
-
 ## Backward mapping (bmap)
 Backward mapping maps from the elements in the codomain to the ones in
 domain.
@@ -143,3 +121,4 @@ julia> elem3 = fmap(M1, (0.1, 0.1))     # No element is generated because 0.1 is
 julia> elem3 isa Nothing
 true
 ```
+

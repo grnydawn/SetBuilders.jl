@@ -77,6 +77,7 @@ d2 = Dict{String, Integer}("a" => 1)
 @test !(d1 in ENUM4)
 push!(ENUM4, d1)
 @test d1 in ENUM4 
+pop!(ENUM4, d1)
 @test !(d2 in ENUM4)
 
 ## Cartesian sets

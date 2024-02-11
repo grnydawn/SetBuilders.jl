@@ -6,12 +6,12 @@ using Test
 @testset "Functionality" begin
 
     include("creations.jl")
-#    include("membership.jl")
-#    include("operations.jl")
-#    include("describe.jl")
-#    include("event.jl")
+    include("membership.jl")
+    include("operations.jl")
+    include("describe.jl")
+    include("event.jl")
     include("mapping.jl")
-#    include("setpkg.jl")
+    include("setpkg.jl")
 
 end
 
