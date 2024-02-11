@@ -130,7 +130,7 @@ the "=>" mark correctly identifies set `B` as the reason for exclusion.
 { x ∈ A | 0 < x < 4 }, where
     A = { x ∈ ::Integer }
 ∩
- => { x ∈ A | 1 < x < 5 }, where
+=> { x ∈ A | 2 < x < 6 }, where
     A = { x ∈ ::Integer }
 ```
 
