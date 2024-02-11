@@ -127,7 +127,7 @@ The function `F1` takes one argument, `events`, which contains all the
 events that occurred during the mapping.
 
 The first item in the vector is the tuple of named sets, as explained in
-[The Types of Mapping Events](@ref).
+[Types of Mapping Events](@ref).
 
 ### Registering a Callback Function
 
