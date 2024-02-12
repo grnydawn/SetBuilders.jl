@@ -1,6 +1,10 @@
 # sets.jl : SetBuilder Set Types
 #
 
+# TODO: TypeSet to singleton
+# TODO: set equality check (==)
+# TODO: set identity generation
+
 # Top-level type of all sets
 
 """
