@@ -416,7 +416,7 @@ function ismember(coelem, set::MappedSet, sb_kw=nothing; on_member=nothing,
 
     end
 
-    return false
+    return _event(set, :member, false, sb_kw, on_nomember=on_nomember)
 end
 
 function ismember(elem, set::CompositeSet, sb_kw=nothing; on_member=nothing,
