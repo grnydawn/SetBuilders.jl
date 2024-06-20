@@ -23,8 +23,8 @@ end
 
 @testset "Quality" begin
 
-    #include("Aqua.jl")
-    #include("Documenter.jl")
+    include("Aqua.jl")
+    include("Documenter.jl")
     #include("JET.jl")
 
 end
